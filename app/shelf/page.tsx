@@ -247,15 +247,10 @@ export default function ShelfPage() {
                         <ClipboardList size={14} />
                         演習シートを開く
                       </button>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <Link href="/practice" style={secondaryLinkStyle}>
-                          演習へ
-                        </Link>
-                        <button onClick={() => handleRemove(item.id)} disabled={removing === item.id} style={removeButtonStyle}>
-                          <Trash2 size={13} />
-                          {removing === item.id ? "削除中..." : "外す"}
-                        </button>
-                      </div>
+                      <button onClick={() => handleRemove(item.id)} disabled={removing === item.id} style={removeButtonStyle}>
+                        <Trash2 size={13} />
+                        {removing === item.id ? "削除中..." : "外す"}
+                      </button>
                     </div>
                   </article>
                 );

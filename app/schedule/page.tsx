@@ -24,8 +24,6 @@ import {
 
   FileText,
 
-  PencilLine,
-
   Plus,
 
   Sparkles,
@@ -233,8 +231,6 @@ const MODE_OPTIONS: Array<{ value: TaskMode; label: string; description: string 
 ];
 
 const QUICK_LINKS = [
-
-  { href: "/practice", label: "演習記録", description: "演習や勉強時間をすぐ残す", icon: PencilLine, accent: "#1E293B", bg: "#F7F7F5" },
 
   { href: "/progress", label: "成績管理", description: "模試と記録を見直す", icon: Trophy, accent: "#1E293B", bg: "#F7F7F5" },
 

@@ -181,7 +181,7 @@ export default function ReflectionPage() {
                 <MiniTrendCard label="活動日数" value={`${data.continuity.activeDays}日`} accent="#7C3AED" />
               </div>
               <div style={ctaRowStyle}>
-                <Link href="/practice" style={ctaStyle}>演習を始める</Link>
+                <Link href="/shelf" style={ctaStyle}>演習を始める</Link>
                 <Link href="/my-sensei" style={ghostCtaStyle}>My先生に相談</Link>
               </div>
             </div>

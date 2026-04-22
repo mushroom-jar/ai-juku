@@ -293,7 +293,7 @@ export default function RoutePage() {
                   <span style={softPillStyle}>{currentBook.books.total_problems}問</span>
                 </div>
               </div>
-              <button onClick={() => router.push("/practice")} style={primaryButtonStyle}>
+              <button onClick={() => router.push("/shelf")} style={primaryButtonStyle}>
                 このまま演習へ進む
               </button>
             </div>
@@ -418,7 +418,7 @@ export default function RoutePage() {
                               </button>
                             )}
                             {item.status === "in_progress" && (
-                              <button onClick={() => router.push("/practice")} style={primaryButtonStyle}>
+                              <button onClick={() => router.push("/shelf")} style={primaryButtonStyle}>
                                 演習を続ける
                               </button>
                             )}

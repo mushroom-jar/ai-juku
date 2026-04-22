@@ -14,7 +14,6 @@ import {
   Library,
   LineChart,
   Map,
-  PencilLine,
   RotateCcw,
   Settings,
 } from "lucide-react";
@@ -49,7 +48,6 @@ const NAV_SECTIONS: Section[] = [
   {
     title: "学習する",
     tabs: [
-      { href: "/practice/records", label: "演習記録", Icon: PencilLine, tone: TONE },
       { href: "/progress", label: "成績管理", Icon: LineChart, tone: TONE },
       { href: "/timeline", label: "タイムライン", Icon: Activity, tone: TONE },
       { href: "/events", label: "カレンダー", Icon: CalendarDays, tone: TONE },
@@ -72,7 +70,7 @@ const NAV_SECTIONS: Section[] = [
 
 const MOBILE_TABS: Tab[] = [
   { href: "/schedule", label: "ホーム", Icon: Home, tone: { color: "#3157B7", bg: "", border: "" } },
-  { href: "/practice", label: "記録", Icon: PencilLine, tone: { color: "#0F766E", bg: "", border: "" } },
+  { href: "/shelf", label: "本棚", Icon: Library, tone: { color: "#0F766E", bg: "", border: "" } },
   { href: "/progress", label: "成績", Icon: LineChart, tone: { color: "#B45309", bg: "", border: "" } },
   { href: "/events", label: "予定", Icon: CalendarDays, tone: { color: "#7C3AED", bg: "", border: "" } },
   { href: "/my-sensei", label: "先生", Icon: GraduationCap, tone: { color: "#3157B7", bg: "", border: "" } },

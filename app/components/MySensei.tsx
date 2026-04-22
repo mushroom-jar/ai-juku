@@ -27,7 +27,7 @@ type SenseiMode = "chat" | "question";
 
 const ACTION_ROUTES: Record<string, { href: string; Icon: React.ElementType }> = {
   record: { href: "/books", Icon: ClipboardList },
-  practice: { href: "/practice", Icon: Timer },
+  practice: { href: "/shelf", Icon: Timer },
   shelf: { href: "/shelf", Icon: Library },
   schedule: { href: "/schedule", Icon: CalendarDays },
   question: { href: "/my-sensei?mode=question", Icon: Camera },
