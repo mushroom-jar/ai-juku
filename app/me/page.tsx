@@ -177,10 +177,10 @@ export default function MePage() {
                       </div>
                     ))}
                   </div>
-                  <Link href="/progress" style={inlineLinkStyle}>成績管理を開く</Link>
+                  <Link href="/progress" style={inlineLinkStyle}>成績・課題を開く</Link>
                 </div>
               ) : (
-                <div style={emptyStyle}>模試がまだ登録されていません。成績管理から追加できます。</div>
+                <div style={emptyStyle}>模試がまだ登録されていません。成績・課題から追加できます。</div>
               )}
             </div>
           </section>

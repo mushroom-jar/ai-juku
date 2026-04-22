@@ -59,7 +59,7 @@ const CATEGORY_OPTIONS = [
   {
     value: "テスト・模試",
     label: "テスト・模試",
-    description: "定期テスト・模試の記録と成績管理",
+    description: "定期テスト・模試の記録と成績確認",
     sharing: "自分のみ",
   },
   {

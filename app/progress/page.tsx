@@ -307,7 +307,7 @@ export default function ProgressPage() {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
           <div>
             <p style={eyebrowStyle}>Score Board</p>
-            <h1 style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#0F172A" }}>成績管理</h1>
+            <h1 style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#0F172A" }}>成績・課題</h1>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => openExamModal("mock")} style={addBtnStyle}>

@@ -48,7 +48,7 @@ const NAV_SECTIONS: Section[] = [
   {
     title: "学習する",
     tabs: [
-      { href: "/progress", label: "成績管理", Icon: LineChart, tone: TONE },
+      { href: "/progress", label: "成績・課題", Icon: LineChart, tone: TONE },
       { href: "/timeline", label: "タイムライン", Icon: Activity, tone: TONE },
       { href: "/events", label: "カレンダー", Icon: CalendarDays, tone: TONE },
     ],
