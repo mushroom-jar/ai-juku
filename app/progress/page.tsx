@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/app/components/AppLayout";
 import {
@@ -387,9 +387,8 @@ export default function ProgressPage() {
                         const et = (exam.exam_type ?? "mock") as ExamType;
 
                         return (
-                          <>
+                          <Fragment key={exam.id}>
                             <tr
-                              key={exam.id}
                               onClick={() => setExpandedId(isExp ? null : exam.id)}
                               style={{ cursor: "pointer", background: isExp ? "#FAFCFF" : "#fff", borderBottom: isExp || idx === filteredExams.length - 1 ? "none" : "1px solid #F1F5F9" }}
                             >
@@ -455,7 +454,7 @@ export default function ProgressPage() {
                                 </td>
                               </tr>
                             )}
-                          </>
+                          </Fragment>
                         );
                       })}
                     </tbody>
