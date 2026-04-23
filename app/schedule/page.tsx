@@ -232,7 +232,7 @@ const MODE_OPTIONS: Array<{ value: TaskMode; label: string; description: string 
 
 const QUICK_LINKS = [
 
-  { href: "/progress", label: "成績・課題", description: "模試・課題の記録を見直す", icon: Trophy, accent: "#1E293B", bg: "#F7F7F5" },
+  { href: "/progress", label: "課題・勉強履歴", description: "課題・勉強タイマーの履歴を見直す", icon: Trophy, accent: "#1E293B", bg: "#F7F7F5" },
 
   { href: "/my-sensei?mode=question", label: "質問する", description: "写真や文章ですぐ聞く", icon: Sparkles, accent: "#1E293B", bg: "#F7F7F5" },
 

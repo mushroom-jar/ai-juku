@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { data: student } = await supabase.from("students").select("id").eq("user_id", user.id).single();
+  if (!student) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const { data, error } = await supabase
+    .from("practice_sessions")
+    .select("*, books(title, subject)")
+    .eq("student_id", student.id)
+    .order("ended_at", { ascending: false })
+    .limit(100);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ sessions: data ?? [] });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
