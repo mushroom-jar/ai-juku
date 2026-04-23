@@ -36,7 +36,7 @@ export async function GET() {
 
   const { data: student } = await supabase
     .from("students")
-    .select("id, name, plan, subjects, exam_date, target_univ, xp")
+    .select("id, name, plan, subjects, exam_date, target_univ, xp, home_message")
     .eq("user_id", user.id)
     .single();
 
@@ -86,6 +86,15 @@ export async function GET() {
     const done = tasks.filter((task) => task.status === "done").length;
     return { date, tasks, done, total: tasks.length };
   });
+
+  const { data: monthSessions } = await supabase
+    .from("practice_sessions")
+    .select("study_minutes")
+    .eq("student_id", student.id)
+    .gte("ended_at", monthStart.toISOString());
+  const thisMonthStudyMinutes = (monthSessions ?? []).reduce((sum, s) => sum + (s.study_minutes ?? 0), 0);
+
+  const upcomingStudyTasks = allTasks.filter((t) => t.date > today);
 
   const [{ count: monthlyQuestionCount }, { count: weeklyQuestionCount }] = await Promise.all([
     supabase
@@ -207,12 +216,15 @@ export async function GET() {
     student,
     today,
     todayTasks,
+    upcomingStudyTasks,
     weekTasks,
     hasSchedule: scheduleIds.length > 0,
     isRepeatWeek,
     freeTasks: freeTasks ?? [],
     laterTasks: laterTasks ?? [],
     activityFeed: activityFeedWithReactions,
+    homeMessage: (student as { home_message?: string | null }).home_message ?? buildHomeMessageFallback(student.exam_date, continuity.currentStreak, todayTasks.length),
+    thisMonthStudyMinutes,
     usage: {
       monthlyQuestionLimit: questionLimit,
       monthlyQuestionUsed: monthlyUsed,
@@ -234,6 +246,19 @@ export async function GET() {
       })),
     },
   });
+}
+
+function buildHomeMessageFallback(examDate: string | null, streak: number, todayTaskCount: number): string {
+  if (examDate) {
+    const days = Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000);
+    if (days > 0 && days <= 30) return `残り${days}日。1日1日が大事、今日も積み上げよう。`;
+    if (days > 0 && days <= 90) return `あと${days}日。毎日コツコツが一番の近道。`;
+    if (days > 90) return `あと${days}日。今から積み上げれば、必ず届く。`;
+  }
+  if (streak >= 14) return `${streak}日連続！すごい流れが来てるよ。今日も続けよう。`;
+  if (streak >= 7) return `${streak}日連続中。この調子で今日も積み上げよう。`;
+  if (todayTaskCount > 0) return `今日は${todayTaskCount}つのタスクがある。一つずつ前に進もう。`;
+  return "今日も一歩前に進もう。小さく始めれば十分。";
 }
 
 function completedStudyCount(weekTasks: Array<{ done: number }>) {
