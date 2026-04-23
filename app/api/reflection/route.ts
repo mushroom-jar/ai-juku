@@ -46,9 +46,16 @@ export async function GET() {
   weekStart.setDate(weekStart.getDate() + diff);
   weekStart.setHours(0, 0, 0, 0);
 
-  const since = new Date();
-  since.setDate(since.getDate() - 56);
-  since.setHours(0, 0, 0, 0);
+  const yearAgo = new Date();
+  yearAgo.setDate(yearAgo.getDate() - 366);
+  yearAgo.setHours(0, 0, 0, 0);
+
+  const ninetyAgo = new Date();
+  ninetyAgo.setDate(ninetyAgo.getDate() - 90);
+  ninetyAgo.setHours(0, 0, 0, 0);
+
+  const lastMonthStart = new Date(monthStart);
+  lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
 
   const [
     { data: sessions },
@@ -61,19 +68,19 @@ export async function GET() {
       .from("practice_sessions")
       .select("study_minutes, ended_at")
       .eq("student_id", student.id)
-      .gte("ended_at", since.toISOString())
+      .gte("ended_at", yearAgo.toISOString())
       .order("ended_at", { ascending: true }),
     supabase
       .from("problem_results")
       .select("recorded_at, result")
       .eq("student_id", student.id)
-      .gte("recorded_at", since.toISOString())
+      .gte("recorded_at", ninetyAgo.toISOString())
       .order("recorded_at", { ascending: true }),
     supabase
       .from("question_logs")
       .select("asked_at")
       .eq("student_id", student.id)
-      .gte("asked_at", since.toISOString())
+      .gte("asked_at", ninetyAgo.toISOString())
       .order("asked_at", { ascending: true }),
     supabase
       .from("free_tasks")
@@ -129,6 +136,30 @@ export async function GET() {
     questionMap.set(key, (questionMap.get(key) ?? 0) + 1);
   }
 
+  // Build daily study array (last 366 days)
+  const dailyMap = new Map<string, number>();
+  for (const s of sessions ?? []) {
+    if (!s.ended_at) continue;
+    const key = s.ended_at.slice(0, 10);
+    dailyMap.set(key, (dailyMap.get(key) ?? 0) + (s.study_minutes ?? 0));
+  }
+  const dailyStudy: Array<{ date: string; minutes: number }> = [];
+  for (let i = 365; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    dailyStudy.push({ date: key, minutes: dailyMap.get(key) ?? 0 });
+  }
+
+  // Last month stats
+  const lastMonthStudyMinutes = (sessions ?? [])
+    .filter(s => s.ended_at >= lastMonthStart.toISOString() && s.ended_at < monthStart.toISOString())
+    .reduce((sum, s) => sum + (s.study_minutes ?? 0), 0);
+  const lastMonthSolved = (results ?? [])
+    .filter(r => r.recorded_at >= lastMonthStart.toISOString() && r.recorded_at < monthStart.toISOString()).length;
+  const lastMonthQuestions = (questions ?? [])
+    .filter(q => q.asked_at >= lastMonthStart.toISOString() && q.asked_at < monthStart.toISOString()).length;
+
   const weekKeys = Array.from(new Set([...studyTimeMap.keys(), ...resultMap.keys(), ...questionMap.keys()]))
     .sort((a, b) => a.localeCompare(b))
     .slice(-8);
@@ -165,14 +196,18 @@ export async function GET() {
       totalStudyMinutes,
       thisWeekStudyMinutes,
       thisMonthStudyMinutes,
+      lastMonthStudyMinutes,
       totalSolved: results?.length ?? 0,
       monthlySolved: (results ?? []).filter((result) => result.recorded_at >= monthStart.toISOString()).length,
+      lastMonthSolved,
       totalQuestions: questions?.length ?? 0,
       monthlyQuestions: (questions ?? []).filter((question) => question.asked_at >= monthStart.toISOString()).length,
+      lastMonthQuestions,
       completedTasks: completedTaskCount ?? 0,
     },
     continuity,
     weeklyTrend,
+    dailyStudy,
     exams: {
       latest: latestExam,
       recent: (exams ?? []).slice(-5).reverse(),

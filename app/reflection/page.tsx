@@ -13,10 +13,12 @@ type ReflectionData = {
   student: { name: string; targetUniv: string | null; examDate: string | null; xp: number };
   overview: {
     totalStudyMinutes: number; thisWeekStudyMinutes: number; thisMonthStudyMinutes: number;
+    lastMonthStudyMinutes: number; lastMonthSolved: number; lastMonthQuestions: number;
     totalSolved: number; monthlySolved: number; totalQuestions: number; monthlyQuestions: number; completedTasks: number;
   };
   continuity: { currentStreak: number; longestStreak: number; activeDays: number; unlockedBadgeIds: string[] };
   weeklyTrend: Array<{ week: string; studyMinutes: number; solved: number; perfect: number; wrong: number; questions: number }>;
+  dailyStudy: Array<{ date: string; minutes: number }>;
   exams: {
     latest: { id: string; exam_name: string; exam_date: string; total_score: number | null; total_max: number | null; total_deviation: number | null } | null;
     recent: Array<{ id: string; exam_name: string; exam_date: string; total_score: number | null; total_max: number | null; total_deviation: number | null }>;
@@ -264,10 +266,12 @@ export default function ReflectionPage() {
 
                   <section style={statsGridStyle}>
                     <TopStatCard label="今週の勉強時間" value={formatStudyMinutes(data.overview.thisWeekStudyMinutes)} helper="今週どれだけ積み上げたか" icon={<Clock3 size={16} />} />
-                    <TopStatCard label="今月の勉強時間" value={formatStudyMinutes(data.overview.thisMonthStudyMinutes)} helper="今月の学習ボリューム" icon={<CalendarDays size={16} />} />
+                    <TopStatCard label="今月の勉強時間" value={formatStudyMinutes(data.overview.thisMonthStudyMinutes)} helper={`先月: ${formatStudyMinutes(data.overview.lastMonthStudyMinutes)}`} icon={<CalendarDays size={16} />} />
                     <TopStatCard label="連続日数" value={`${data.continuity.currentStreak}日`} helper={`最長 ${data.continuity.longestStreak}日`} icon={<Flame size={16} />} />
                     <TopStatCard label="今月の質問" value={`${data.overview.monthlyQuestions}回`} helper={`累計 ${data.overview.totalQuestions}回`} icon={<MessageSquareText size={16} />} />
                   </section>
+
+                  <StudyHeatmap dailyStudy={data.dailyStudy ?? []} />
 
                   <section style={twoColStyle}>
                     <div style={cardStyle}>
@@ -294,15 +298,13 @@ export default function ReflectionPage() {
                       </div>
                     </div>
                     <div style={cardStyle}>
-                      <SectionHead icon={<Activity size={16} color="#3157B7" />} title="今のひとこと" desc="最近の流れから、今の状態を短くまとめています。" />
-                      <div style={summaryBoxStyle}>
-                        <div style={summaryTitleStyle}>{buildSummaryTitle(data)}</div>
-                        <div style={summaryBodyStyle}>{buildSummaryBody(data, weeklyAverage)}</div>
-                      </div>
-                      <div style={miniChartStackStyle}>
-                        <MiniTrendCard label="週間平均" value={formatStudyMinutes(weeklyAverage)} accent="#3157B7" />
-                        <MiniTrendCard label="累計の解いた問題" value={`${data.overview.totalSolved}問`} accent="#0F766E" />
-                        <MiniTrendCard label="活動日数" value={`${data.continuity.activeDays}日`} accent="#7C3AED" />
+                      <SectionHead icon={<Brain size={16} color="#4338CA" />} title="インサイト・月次比較" desc="学習パターンを分析し、先月と今月を数字で比べます。" />
+                      <PersonalInsights data={data} />
+                      <div style={{ marginTop: 14 }}>
+                        <MonthlyCompare
+                          thisM={{ minutes: data.overview.thisMonthStudyMinutes, solved: data.overview.monthlySolved, questions: data.overview.monthlyQuestions }}
+                          lastM={{ minutes: data.overview.lastMonthStudyMinutes ?? 0, solved: data.overview.lastMonthSolved ?? 0, questions: data.overview.lastMonthQuestions ?? 0 }}
+                        />
                       </div>
                       <div style={ctaRowStyle}>
                         <Link href="/shelf" style={ctaStyle}>演習を始める</Link>
@@ -828,6 +830,148 @@ function ExamTrendChart({ exams }: { exams: ReflectionData["exams"]["recent"] })
   );
 }
 
+// ── A: 勉強ヒートマップ ─────────────────────────────────────────
+function StudyHeatmap({ dailyStudy }: { dailyStudy: ReflectionData["dailyStudy"] }) {
+  const weeks = buildHeatmapWeeks(dailyStudy);
+  const CELL = 13, GAP = 3;
+  const DAY_LABELS = ["月", "", "水", "", "金", "", "日"];
+
+  const monthLabels: Array<{ col: number; text: string }> = [];
+  let lastMonth = -1;
+  weeks.forEach((w, col) => {
+    const m = w.monDate.getMonth();
+    if (m !== lastMonth) { monthLabels.push({ col, text: `${m + 1}月` }); lastMonth = m; }
+  });
+
+  const studiedDays = dailyStudy.filter(d => d.minutes > 0).length;
+  const maxEntry = dailyStudy.reduce((a, b) => b.minutes > a.minutes ? b : a, { date: "", minutes: 0 });
+
+  return (
+    <div style={cardStyle}>
+      <SectionHead
+        icon={<CalendarDays size={16} color="#4338CA" />}
+        title="勉強カレンダー"
+        desc="過去1年間の勉強記録を一覧で見られます。色が濃いほど多く勉強した日です。"
+      />
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as CSSProperties["WebkitOverflowScrolling"] }}>
+        <div style={{ display: "inline-flex", flexDirection: "column", gap: 4, paddingBottom: 4 }}>
+          {/* month labels */}
+          <div style={{ display: "flex", paddingLeft: 22 }}>
+            {weeks.map((_, col) => {
+              const ml = monthLabels.find(m => m.col === col);
+              return (
+                <div key={col} style={{ width: CELL + GAP, fontSize: 9, color: "#94A3B8", fontWeight: 800, overflow: "visible", whiteSpace: "nowrap" }}>
+                  {ml ? ml.text : ""}
+                </div>
+              );
+            })}
+          </div>
+          {/* grid */}
+          <div style={{ display: "flex", gap: GAP }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: GAP, width: 18, flexShrink: 0 }}>
+              {DAY_LABELS.map((label, i) => (
+                <div key={i} style={{ height: CELL, fontSize: 9, color: "#94A3B8", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>{label}</div>
+              ))}
+            </div>
+            {weeks.map((week, col) => (
+              <div key={col} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+                {week.days.map((day, row) => (
+                  <div
+                    key={row}
+                    title={!day.isFuture ? `${day.date}: ${day.minutes}分` : ""}
+                    style={{
+                      width: CELL, height: CELL, borderRadius: 3,
+                      background: heatColor(day.minutes, day.isFuture),
+                      outline: day.isToday ? "2px solid #4338CA" : undefined,
+                      outlineOffset: day.isToday ? "1px" : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ fontSize: 12, color: "#64748B" }}>
+          過去1年で <strong style={{ color: "#0F172A" }}>{studiedDays}日</strong> 勉強
+          {maxEntry.minutes > 0 && <> · 最多1日 <strong style={{ color: "#4338CA" }}>{formatStudyMinutes(maxEntry.minutes)}</strong></>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{ fontSize: 10, color: "#94A3B8" }}>少</span>
+          {[0, 20, 50, 90, 150].map(m => (
+            <div key={m} style={{ width: 12, height: 12, borderRadius: 2, background: heatColor(m, false) }} />
+          ))}
+          <span style={{ fontSize: 10, color: "#94A3B8" }}>多</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── D: 月次比較 ─────────────────────────────────────────────────
+function MonthlyCompare({ thisM, lastM }: {
+  thisM: { minutes: number; solved: number; questions: number };
+  lastM: { minutes: number; solved: number; questions: number };
+}) {
+  const rows = [
+    { label: "勉強時間", curr: thisM.minutes, prev: lastM.minutes, fmt: formatStudyMinutes },
+    { label: "解いた問題", curr: thisM.solved, prev: lastM.solved, fmt: (n: number) => `${n}問` },
+    { label: "質問回数", curr: thisM.questions, prev: lastM.questions, fmt: (n: number) => `${n}回` },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      {rows.map(({ label, curr, prev, fmt }) => {
+        const diff = curr - prev;
+        const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
+        const up = diff > 0;
+        return (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", borderRadius: 16, background: "#F8FAFC", border: "1px solid rgba(148,163,184,0.12)" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B" }}>{label}</div>
+              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 1 }}>先月: {fmt(prev)}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#0F172A" }}>{fmt(curr)}</div>
+              {pct !== null && diff !== 0 && (
+                <div style={{ fontSize: 11, fontWeight: 700, color: up ? "#059669" : "#DC2626", display: "flex", alignItems: "center", gap: 2, justifyContent: "flex-end", marginTop: 1 }}>
+                  {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                  {up ? "+" : ""}{pct}%
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── E: パーソナルインサイト ─────────────────────────────────────
+function PersonalInsights({ data }: { data: ReflectionData }) {
+  const insights = buildInsights(data);
+  return (
+    <div style={summaryBoxStyle}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <Brain size={14} color="#4338CA" />
+        <span style={{ fontSize: 13, fontWeight: 800, color: "#0F172A" }}>あなたの学習パターン</span>
+      </div>
+      {insights.length === 0 ? (
+        <div style={summaryBodyStyle}>データが増えると学習パターンが自動で分析されます。</div>
+      ) : (
+        <div style={{ display: "grid", gap: 9 }}>
+          {insights.map((text, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#475569", lineHeight: 1.65 }}>
+              <span style={{ marginTop: 2, width: 17, height: 17, borderRadius: "50%", background: "#EEF2FF", color: "#4338CA", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+              {text}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 成績タブ用サブコンポーネント ────────────────────────────────
 function ScoreCard({ label, value, color, diff, sub }: { label: string; value: string; color: string; diff?: number | null; sub?: string }) {
   return (
@@ -911,6 +1055,81 @@ function Legend() {
       ))}
     </div>
   );
+}
+
+// ── ヒートマップヘルパー ─────────────────────────────────────────
+function buildHeatmapWeeks(dailyStudy: ReflectionData["dailyStudy"]) {
+  const dateMap = new Map(dailyStudy.map(d => [d.date, d.minutes]));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const dow = today.getDay();
+  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const currentMon = new Date(today);
+  currentMon.setDate(today.getDate() - daysToMon);
+  const weeks: Array<{ monDate: Date; days: Array<{ date: string; minutes: number; isToday: boolean; isFuture: boolean }> }> = [];
+  for (let w = 51; w >= 0; w--) {
+    const mon = new Date(currentMon);
+    mon.setDate(currentMon.getDate() - w * 7);
+    const days = [];
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(mon);
+      dt.setDate(mon.getDate() + d);
+      const s = dt.toISOString().slice(0, 10);
+      days.push({ date: s, minutes: dateMap.get(s) ?? 0, isToday: s === todayStr, isFuture: s > todayStr });
+    }
+    weeks.push({ monDate: mon, days });
+  }
+  return weeks;
+}
+function heatColor(minutes: number, isFuture: boolean): string {
+  if (isFuture) return "transparent";
+  if (minutes === 0) return "#F1F5F9";
+  if (minutes < 30) return "#C7D2FE";
+  if (minutes < 60) return "#818CF8";
+  if (minutes < 120) return "#4338CA";
+  return "#312E81";
+}
+
+// ── インサイト生成 ───────────────────────────────────────────────
+function buildInsights(data: ReflectionData): string[] {
+  const out: string[] = [];
+  const DAY = ["日", "月", "火", "水", "木", "金", "土"];
+  const sums = new Array(7).fill(0);
+  const cnts = new Array(7).fill(0);
+  for (const d of data.dailyStudy) {
+    if (d.minutes > 0) { const w = new Date(d.date).getDay(); sums[w] += d.minutes; cnts[w]++; }
+  }
+  const avgs = sums.map((s, i) => cnts[i] > 0 ? s / cnts[i] : 0);
+  const best = avgs.indexOf(Math.max(...avgs));
+  if (avgs[best] > 0) out.push(`${DAY[best]}曜日が一番集中できている（平均 ${Math.round(avgs[best])}分）`);
+
+  const curr = data.overview.thisMonthStudyMinutes;
+  const prev = data.overview.lastMonthStudyMinutes ?? 0;
+  if (prev > 0) {
+    const pct = Math.round(((curr - prev) / prev) * 100);
+    if (pct >= 10) out.push(`先月より勉強時間が ${pct}% 増加した`);
+    else if (pct <= -10) out.push(`先月より勉強時間が ${Math.abs(pct)}% 減少している`);
+    else out.push("先月とほぼ同じペースで継続できている");
+  }
+
+  const str = data.continuity.currentStreak;
+  const lng = data.continuity.longestStreak;
+  if (str >= 14) out.push(`${str}日連続中！最長記録まであと ${lng - str}日`);
+  else if (str >= 7) out.push(`${str}日連続で勉強できている。このまま続けよう`);
+  else if (str >= 3) out.push(`${str}日連続中。あと${7 - str}日で1週間達成！`);
+
+  const tr = data.weeklyTrend;
+  if (tr.length >= 8) {
+    const r4 = tr.slice(-4).reduce((s, w) => s + w.studyMinutes, 0);
+    const p4 = tr.slice(-8, -4).reduce((s, w) => s + w.studyMinutes, 0);
+    if (p4 > 0) {
+      const pct = Math.round(((r4 - p4) / p4) * 100);
+      if (pct >= 20) out.push(`直近4週の勉強量が前の4週より ${pct}% 多い`);
+      else if (pct <= -20) out.push(`直近4週の勉強量が前の4週より ${Math.abs(pct)}% 少ない`);
+    }
+  }
+  return out.slice(0, 3);
 }
 
 function buildSummaryTitle(data: ReflectionData) {
