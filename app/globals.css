@@ -78,6 +78,11 @@ a {
   to   { transform: rotate(360deg); }
 }
 
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 ::-webkit-scrollbar {
   width: 4px;
 }

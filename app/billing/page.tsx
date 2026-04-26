@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLAN_DEFINITIONS, type BillingInterval } from "@/lib/plans";
@@ -37,6 +37,14 @@ export default function BillingPage() {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [yearlyAvailable, setYearlyAvailable] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/config")
+      .then(r => r.json())
+      .then((d: { yearlyAvailable: boolean }) => setYearlyAvailable(d.yearlyAvailable))
+      .catch(() => {});
+  }, []);
 
   const nextPath = searchParams.get("next") || "/schedule";
   const fromOnboarding = searchParams.get("entry") === "onboarding";
@@ -96,9 +104,11 @@ export default function BillingPage() {
           <button type="button" onClick={() => setInterval("monthly")} style={interval === "monthly" ? activeSwitchStyle : switchStyle}>
             月払い
           </button>
-          <button type="button" onClick={() => setInterval("yearly")} style={interval === "yearly" ? activeSwitchStyle : switchStyle}>
-            年払い
-          </button>
+          {yearlyAvailable && (
+            <button type="button" onClick={() => setInterval("yearly")} style={interval === "yearly" ? activeSwitchStyle : switchStyle}>
+              年払い
+            </button>
+          )}
         </div>
 
         <div style={topActionRowStyle}>

@@ -27,8 +27,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 認証不要なパス
-  const publicPaths = ["/login", "/auth/callback", "/"];
-  const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith("/auth/"));
+  const publicPaths = ["/login", "/auth/callback", "/", "/forgot-password", "/billing"];
+  const isPublic =
+    publicPaths.some((p) => pathname === p || pathname.startsWith("/auth/")) ||
+    pathname.startsWith("/pay/") ||
+    pathname.startsWith("/signup/");
 
   // 未ログイン → ログインページへ
   if (!user && !isPublic) {

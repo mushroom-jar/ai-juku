@@ -67,12 +67,25 @@ const ROUTE_ORDER: Partial<Record<Subject, string[]>> = {
   ],
 };
 
+// 共通テスト利用は目標レベルをLv.2に上限
+const CSAT_MAX_LEVEL = 2;
+
+// 勉強時間が短い場合の1科目あたり最大教材数（目安: 平日60分未満）
+const SHORT_TIME_BOOK_CAP = 4;
+
 export async function generateRoute(
   serviceClient: SupabaseClient,
   studentId: string,
-  student: { current_level: number; target_level: number; subjects: string[] }
+  student: {
+    current_level: number;
+    target_level: number;
+    subjects: string[];
+    subject_levels?: Record<string, number> | null;
+    exam_type?: string | null;
+    weakness_subjects?: string[] | null;
+    available_study_time?: { weekday_minutes?: number; holiday_minutes?: number } | null;
+  }
 ): Promise<{ ok: boolean; count?: number; error?: string }> {
-  // 既存ルートを削除（再生成）
   await serviceClient.from("student_routes").delete().eq("student_id", studentId);
 
   const { data: allBooks } = await serviceClient
@@ -83,16 +96,39 @@ export async function generateRoute(
 
   const bookMap = new Map(allBooks.map((b) => [`${b.subject}::${b.title}`, b]));
 
-  const subjects = student.subjects as Subject[];
-  const fromLevel = student.current_level;
-  const toLevel = student.target_level;
+  const globalFromLevel = student.current_level;
+  const subjectLevels = (student.subject_levels ?? {}) as Record<string, number>;
+
+  // 共通テスト利用は目標レベルをLv.2に制限
+  const globalToLevel =
+    student.exam_type === "csat"
+      ? Math.min(student.target_level, CSAT_MAX_LEVEL)
+      : student.target_level;
+
+  // 弱点科目を先頭に持ってくる（優先的にルートに入れる）
+  const weakSet = new Set(student.weakness_subjects ?? []);
+  const subjects = [...student.subjects].sort((a, b) => {
+    const aWeak = weakSet.has(a) ? 0 : 1;
+    const bWeak = weakSet.has(b) ? 0 : 1;
+    return aWeak - bWeak;
+  }) as Subject[];
+
+  // 勉強時間が短い場合は1科目あたりの教材数を絞る
+  const weekdayMin = student.available_study_time?.weekday_minutes ?? 120;
+  const bookCapPerSubject = weekdayMin < 60 ? SHORT_TIME_BOOK_CAP : Infinity;
 
   const routeEntries: { student_id: string; book_id: string; step_order: number; status: string }[] = [];
   let stepOrder = 1;
 
   for (const subject of subjects) {
     const titles = ROUTE_ORDER[subject] ?? [];
+    // 科目別レベルがあればそちらを優先、なければ全体のcurrent_levelを使う
+    const fromLevel = subjectLevels[subject] ?? globalFromLevel;
+    const toLevel = globalToLevel;
+    let countForSubject = 0;
+
     for (const title of titles) {
+      if (countForSubject >= bookCapPerSubject) break;
       const book = bookMap.get(`${subject}::${title}`);
       if (!book) continue;
       if (book.level < fromLevel || book.level > toLevel) continue;
@@ -102,6 +138,7 @@ export async function generateRoute(
         step_order: stepOrder++,
         status: "not_started",
       });
+      countForSubject++;
     }
   }
 

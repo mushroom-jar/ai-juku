@@ -2,7 +2,7 @@
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
-export const AI_MODEL = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+export const AI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
 const SYSTEM_PROMPT = `
 あなたは大学受験向けの学習支援AIです。数学・物理・化学・英語の質問に丁寧に答えます。

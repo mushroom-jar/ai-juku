@@ -36,7 +36,7 @@ export async function GET() {
 
   const { data: student } = await supabase
     .from("students")
-    .select("id, name, plan, subjects, exam_date, target_univ, xp, home_message")
+    .select("id, name, plan, subjects, exam_date, target_univ, xp, home_message, ai_interview_completed_at, starter_worry_subject")
     .eq("user_id", user.id)
     .single();
 
@@ -245,6 +245,8 @@ export async function GET() {
         unlocked: continuity.unlockedBadgeIds.includes(badge.id),
       })),
     },
+    showInterviewCta: !(student as { ai_interview_completed_at?: string | null }).ai_interview_completed_at,
+    starterWorrySubject: (student as { starter_worry_subject?: string | null }).starter_worry_subject ?? null,
   });
 }
 

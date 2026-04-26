@@ -12,7 +12,7 @@ export type Subject =
   | "information"
   | "other";
 export type Plan = "free" | "basic" | "premium";
-export type UserRole = "student" | "teacher" | "parent";
+export type UserRole = "student" | "parent" | "org_staff";
 
 export interface Student {
   id: string;
@@ -21,10 +21,15 @@ export interface Student {
   name: string;
   grade: number;
   target_univ: string;
+  target_faculty?: string | null;
+  target_department?: string | null;
+  exam_type?: string | null;
   target_level: number;
   exam_date: string | null;
   current_level: number;
   subjects: Subject[];
+  subject_levels?: Partial<Record<Subject, number>> | null;
+  last_mock_level?: number | null;
   plan: Plan;
   line_user_id: string | null;
   study_style?: string | null;
@@ -39,13 +44,12 @@ export interface Student {
   onboarding_answers?: Record<string, unknown>;
   ai_interview_completed_at?: string | null;
   interview_transcript?: string;
-  created_at: string;
-}
-
-export interface Teacher {
-  id: string;
-  user_id: string;
-  name: string;
+  route_strategy?: {
+    overview: string;
+    prioritySubjects: string[];
+    firstWeekPolicy: string;
+    warnings: string[];
+  } | null;
   created_at: string;
 }
 
@@ -99,17 +103,6 @@ export interface DailyTask {
   status: "pending" | "done" | "skipped";
   completed_at: string | null;
   books?: Book;
-}
-
-export interface ProblemRecord {
-  id: string;
-  student_id: string;
-  problem_id: string;
-  status: "solved" | "unsolved";
-  attempt_count: number;
-  last_attempted: string;
-  mastered_at: string | null;
-  created_at: string;
 }
 
 export interface QuestionLog {

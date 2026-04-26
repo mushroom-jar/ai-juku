@@ -31,6 +31,8 @@ type TaskCategory = "club" | "test" | "lesson" | "free" | "other";
 type TaskMode = "later" | "scheduled";
 type ScheduleResponse = {
   student: { name: string; target_univ: string | null; exam_date: string | null; plan?: string };
+  showInterviewCta?: boolean;
+  starterWorrySubject?: string | null;
   today: string;
   todayTasks: StudyTask[];
   upcomingStudyTasks: StudyTask[];
@@ -235,28 +237,28 @@ export default function SchedulePage() {
   };
 
   // 派生データ
-  const todayScheduled = useMemo(() => data?.freeTasks.filter(t => t.date === data.today) ?? [], [data]);
-  const upcomingScheduled = useMemo(() => data?.freeTasks.filter(t => t.date !== data?.today) ?? [], [data]);
-  const todayStudyDone = useMemo(() => data?.todayTasks.filter(t => t.status === "done").length ?? 0, [data]);
+  const todayScheduled = useMemo(() => data?.freeTasks?.filter(t => t.date === data.today) ?? [], [data]);
+  const upcomingScheduled = useMemo(() => data?.freeTasks?.filter(t => t.date !== data?.today) ?? [], [data]);
+  const todayStudyDone = useMemo(() => data?.todayTasks?.filter(t => t.status === "done").length ?? 0, [data]);
 
   const examDaysLeft = useMemo(() => {
-    if (!data?.student.exam_date) return null;
+    if (!data?.student?.exam_date) return null;
     const days = Math.ceil((new Date(data.student.exam_date).getTime() - Date.now()) / 86400000);
     return days > 0 ? days : null;
   }, [data]);
 
   const mySenseiPrompts = useMemo(() => {
     if (!data) return [];
-    const next = data.todayTasks.find(t => t.status !== "done");
-    const hasActivity = data.activityFeed.length > 0;
+    const next = data.todayTasks?.find(t => t.status !== "done");
+    const hasActivity = (data.activityFeed?.length ?? 0) > 0;
     return [
-      { label: "今日の優先順位を聞く", description: "今日の予定と学習タスクから、先にやる3つを整理してもらう。", query: `${data.student.name}の今日の予定Todoと学習タスクを見て、優先順位を3つに絞って提案して。` },
+      { label: "今日の優先順位を聞く", description: "今日の予定と学習タスクから、先にやる3つを整理してもらう。", query: `${data.student?.name ?? ""}の今日の予定Todoと学習タスクを見て、優先順位を3つに絞って提案して。` },
       { label: "最近の流れを整理する", description: "最近の記録や動きから、強みと止まりやすい所を短くまとめてもらう。", query: hasActivity ? "最近の学習記録を見て、良い流れと見直したい所を短く整理して。" : "まだ学習記録が少ない状態です。最初に何から整えるべきか提案して。" },
       { label: "90分プランを作る", description: "このあとの90分で進める学習プランを作ってもらう。", query: next ? `${next.books?.title ?? "今日の学習"}を含めて、このあとの90分プランを作って。` : "このあとの90分で進める学習プランを作って。" },
     ];
   }, [data]);
 
-  if (loading || !data) {
+  if (loading || !data?.student) {
     return (
       <AppLayout>
         <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -267,7 +269,10 @@ export default function SchedulePage() {
   }
 
   // 今日のタスク（study + free を統合表示用に整形）
-  const todayAllCount = todayScheduled.length + data.todayTasks.length;
+  const todayAllCount = todayScheduled.length + (data.todayTasks?.length ?? 0);
+  const continuity = data.continuity ?? { currentStreak: 0, longestStreak: 0, activeDays: 0, badges: [] };
+  const weeklyReview = data.weeklyReview ?? { studyDays: 0, completedStudyTasks: 0, totalStudyTasks: 0, completedTodos: 0, summary: { title: "", body: "" } };
+  const usage = data.usage ?? { monthlyQuestionLimit: null, monthlyQuestionUsed: 0, monthlyQuestionRemaining: null, weeklyQuestionUsed: 0 };
   const todayDoneCount = todayScheduled.filter(t => t.status === "done").length + todayStudyDone;
 
   // 今後のタスク: 日付順
@@ -300,7 +305,26 @@ export default function SchedulePage() {
             <div style={greetingStyle}>"{data.homeMessage}"</div>
           </div>
 
-          {/* ── 2. タイマーバナー (起動中のみ) ── */}
+          {/* ── 2. AI面談CTA（未完了のみ） ── */}
+          {data.showInterviewCta && (
+            <div style={interviewCtaStyle}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#1E3A8A", marginBottom: 4 }}>
+                  あなた専用の学習方針を作る
+                </div>
+                <div style={{ fontSize: 12, color: "#3B64C8", lineHeight: 1.6 }}>
+                  {data.starterWorrySubject && data.starterWorrySubject !== "まだ分からない"
+                    ? `${data.starterWorrySubject}など、気になる科目を含めた5分のAI面談で、ルートと優先順位を整えられます`
+                    : "5分のAI面談で、優先科目・ルート・毎日の進め方を整えられます"}
+                </div>
+              </div>
+              <a href="/onboarding" style={interviewCtaBtnStyle}>
+                AI面談を始める <Sparkles size={13} />
+              </a>
+            </div>
+          )}
+
+          {/* ── 3. タイマーバナー (起動中のみ) ── */}
           {timerActive && (
             <div style={timerBannerStyle}>
               <Timer size={18} color="#2563EB" />
@@ -354,7 +378,7 @@ export default function SchedulePage() {
             })}
 
             {/* 今日の study tasks */}
-            {data.todayTasks.map(task => {
+            {(data.todayTasks ?? []).map(task => {
               const a = subjectAccent(task.books?.subject);
               const done = task.status === "done";
               return (
@@ -411,10 +435,10 @@ export default function SchedulePage() {
 
           {/* ── 5. ステータス行 ── */}
           <div style={statusRowStyle}>
-            <StatusPill icon={<Flame size={13} color="#EA580C" />} value={`${data.continuity.currentStreak}日`} label="連続" />
+            <StatusPill icon={<Flame size={13} color="#EA580C" />} value={`${continuity.currentStreak}日`} label="連続" />
             <StatusPill icon={<Clock3 size={13} color="#2563EB" />} value={formatStudyMinutes(data.thisMonthStudyMinutes)} label="今月" />
-            <StatusPill icon={<CalendarDays size={13} color="#0F766E" />} value={`${data.weeklyReview.studyDays}日`} label="今週" />
-            <StatusPill icon={<MessageSquareText size={13} color="#7C3AED" />} value={data.usage.monthlyQuestionRemaining == null ? "∞" : `${data.usage.monthlyQuestionRemaining}`} label="AI残り" />
+            <StatusPill icon={<CalendarDays size={13} color="#0F766E" />} value={`${weeklyReview.studyDays}日`} label="今週" />
+            <StatusPill icon={<MessageSquareText size={13} color="#7C3AED" />} value={usage.monthlyQuestionRemaining == null ? "∞" : `${usage.monthlyQuestionRemaining}`} label="AI残り" />
           </div>
 
           {/* ── 6. クイックアクセス ── */}
@@ -431,16 +455,16 @@ export default function SchedulePage() {
           <div style={cardStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
               <h2 style={sectionTitleStyle}>今週の振り返り</h2>
-              <span style={pillStyle("#F1F5F9", "#64748B")}>{data.weeklyReview.studyDays}日学習</span>
+              <span style={pillStyle("#F1F5F9", "#64748B")}>{weeklyReview.studyDays}日学習</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
-              <MiniMetric label="演習" value={`${data.weeklyReview.completedStudyTasks}/${data.weeklyReview.totalStudyTasks}`} note="学習タスク" />
-              <MiniMetric label="Todo" value={data.weeklyReview.completedTodos} note="完了タスク" />
-              <MiniMetric label="質問" value={data.usage.weeklyQuestionUsed} note="今週" />
+              <MiniMetric label="演習" value={`${weeklyReview.completedStudyTasks}/${weeklyReview.totalStudyTasks}`} note="学習タスク" />
+              <MiniMetric label="Todo" value={weeklyReview.completedTodos} note="完了タスク" />
+              <MiniMetric label="質問" value={usage.weeklyQuestionUsed} note="今週" />
             </div>
             <div style={summaryBoxStyle}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#0F172A", marginBottom: 6 }}>{data.weeklyReview.summary.title}</div>
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.75, color: "#64748B" }}>{data.weeklyReview.summary.body}</p>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#0F172A", marginBottom: 6 }}>{weeklyReview.summary.title}</div>
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.75, color: "#64748B" }}>{weeklyReview.summary.body}</p>
             </div>
           </div>
 
@@ -464,14 +488,14 @@ export default function SchedulePage() {
           </div>
 
           {/* ── 9. タイムライン ── */}
-          {data.activityFeed.length > 0 && (
+          {(data.activityFeed?.length ?? 0) > 0 && (
             <div style={cardStyle}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h2 style={sectionTitleStyle}>みんなのタイムライン</h2>
                 <span style={pillStyle("#F1F5F9", "#64748B")}>shared feed</span>
               </div>
               <div style={{ display: "grid", gap: 10 }}>
-                {data.activityFeed.map(item => (
+                {(data.activityFeed ?? []).map(item => (
                   <div key={item.id} style={feedItemStyle}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 5 }}>
                       <span style={pillStyle("#F1F5F9", "#64748B")}>{item.actor_name}</span>
@@ -493,14 +517,14 @@ export default function SchedulePage() {
           )}
 
           {/* ── 10. あとでやる (件数があれば表示) ── */}
-          {data.laterTasks.length > 0 && (
+          {(data.laterTasks?.length ?? 0) > 0 && (
             <div style={cardStyle}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <h2 style={sectionTitleStyle}>あとでやる</h2>
-                <span style={pillStyle("#F1F5F9", "#64748B")}>{data.laterTasks.length}件</span>
+                <span style={pillStyle("#F1F5F9", "#64748B")}>{data.laterTasks?.length ?? 0}件</span>
               </div>
               <div style={{ display: "grid", gap: 8 }}>
-                {data.laterTasks.map(task => {
+                {(data.laterTasks ?? []).map(task => {
                   const done = task.status === "done";
                   return (
                     <div key={task.id} style={taskRowStyle(done)}>
@@ -599,6 +623,8 @@ function MiniMetric({ label, value, note }: { label: string; value: string | num
 const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#F8FAFC" };
 const mainStyle: CSSProperties = { maxWidth: 720, margin: "0 auto", padding: "16px 14px 100px", display: "grid", gap: 12 };
 const spinnerStyle: CSSProperties = { width: 32, height: 32, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#2563EB", animation: "spin 0.9s linear infinite" };
+const interviewCtaStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 18, background: "linear-gradient(135deg, #EFF6FF, #E8F0FE)", border: "1px solid #BFDBFE" };
+const interviewCtaBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 12, background: "#3157B7", color: "#fff", fontSize: 12, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 };
 const cardStyle: CSSProperties = { background: "#fff", border: "1px solid #E8E8E4", borderRadius: 20, padding: "16px 16px" };
 const sectionTitleStyle: CSSProperties = { margin: 0, fontSize: 15, fontWeight: 800, color: "#0F172A" };
 

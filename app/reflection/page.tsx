@@ -1097,7 +1097,7 @@ function buildInsights(data: ReflectionData): string[] {
   const DAY = ["日", "月", "火", "水", "木", "金", "土"];
   const sums = new Array(7).fill(0);
   const cnts = new Array(7).fill(0);
-  for (const d of data.dailyStudy) {
+  for (const d of (data.dailyStudy ?? [])) {
     if (d.minutes > 0) { const w = new Date(d.date).getDay(); sums[w] += d.minutes; cnts[w]++; }
   }
   const avgs = sums.map((s, i) => cnts[i] > 0 ? s / cnts[i] : 0);

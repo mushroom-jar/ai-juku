@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { calcLevel } from "@/lib/levels";
 import { canUseAiJukuLevelPerk, getCheckoutPrice, type BillingInterval, type StudentPlan } from "@/lib/plans";
@@ -21,13 +21,29 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { data: student } = await supabase
+  let { data: student } = await supabase
     .from("students")
     .select("id, name, stripe_customer_id, stripe_subscription_id, plan, xp, ai_support_trial_used, ai_juku_trial_used")
     .eq("user_id", user.id)
     .single();
 
-  if (!student) return NextResponse.json({ error: "not found" }, { status: 404 });
+  // student レコードがなければ最小構成で作成（メール確認フロー等でスキップされた場合）
+  if (!student) {
+    const nameFromMeta =
+      typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()
+        ? user.user_metadata.name.trim()
+        : (user.email ?? "ゲスト");
+
+    const serviceClient = await createServiceClient();
+    const { data: created, error: insertError } = await serviceClient
+      .from("students")
+      .insert({ user_id: user.id, name: nameFromMeta, plan: "free", grade: 3, subjects: [] })
+      .select("id, name, stripe_customer_id, stripe_subscription_id, plan, xp, ai_support_trial_used, ai_juku_trial_used")
+      .single();
+
+    if (!created) return NextResponse.json({ error: insertError?.message ?? "student record could not be created", code: insertError?.code }, { status: 500 });
+    student = created;
+  }
 
   const body = await req.json().catch(() => ({}));
   const tier = normalizeTier(body.planKey ?? body.tier);
@@ -78,7 +94,7 @@ export async function POST(req: NextRequest) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: targetPlan.priceId, quantity: 1 }],
-    success_url: `${appUrl}/settings?upgraded=1`,
+    success_url: `${appUrl}/starter-questions?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/billing`,
     subscription_data: {
       ...(trialPeriodDays ? { trial_period_days: trialPeriodDays } : {}),

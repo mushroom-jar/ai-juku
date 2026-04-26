@@ -2,8 +2,9 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AppLayout from "@/app/components/AppLayout";
-import { CalendarDays, Clock3, Flame, MessageSquareText, Sparkles, Target, Trophy, CheckCircle2 } from "lucide-react";
+import { CalendarDays, Clock3, Flame, MessageSquareText, Settings, Sparkles, Target, Trophy, CheckCircle2 } from "lucide-react";
 
 type LevelTheme = {
   level: number;
@@ -54,6 +55,7 @@ type MockExam = {
 };
 
 export default function MePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<XpData | null>(null);
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [exams, setExams] = useState<MockExam[]>([]);
@@ -108,11 +110,17 @@ export default function MePage() {
           <section style={heroStyle}>
             <div style={avatarStyle}>{(profile.name || "?").slice(0, 1).toUpperCase()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={eyebrowStyle}>My profile</p>
-              <h1 style={titleStyle}>{profile.name || "あなた"}</h1>
-              <p style={subtitleStyle}>
-                毎日の自習の積み上がりをまとめて見返せるページです。今の成長、勉強量、質問回数、最近の成績をひと目で確認できます。
-              </p>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                <h1 style={titleStyle}>{profile.name || "あなた"}</h1>
+                <button
+                  onClick={() => router.push("/settings")}
+                  style={settingsBtnStyle}
+                  title="設定"
+                >
+                  <Settings size={16} />
+                  設定
+                </button>
+              </div>
               <div style={tagRowStyle}>
                 <span style={{ ...tagStyle, background: bg, color: accent }}>{profile.planLabel}</span>
                 <span style={tagStyle}>Lv.{profile.level}</span>
@@ -287,8 +295,22 @@ const mainStyle: CSSProperties = { maxWidth: 1080, margin: "0 auto", padding: "2
 const heroStyle: CSSProperties = { display: "flex", alignItems: "start", gap: 18, borderRadius: 28, background: "#FFFFFF", border: "1px solid rgba(148,163,184,0.14)", padding: 24 };
 const avatarStyle: CSSProperties = { width: 84, height: 84, borderRadius: "50%", background: "linear-gradient(135deg, #0F172A 0%, #3157B7 100%)", display: "grid", placeItems: "center", color: "#FFFFFF", fontSize: 28, fontWeight: 900, flexShrink: 0 };
 const eyebrowStyle: CSSProperties = { margin: 0, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800, color: "#5470D9" };
-const titleStyle: CSSProperties = { margin: "8px 0 8px", fontSize: 34, lineHeight: 1.1, fontWeight: 900, color: "#0F172A" };
+const titleStyle: CSSProperties = { margin: "0 0 8px", fontSize: 28, lineHeight: 1.1, fontWeight: 900, color: "#0F172A" };
 const subtitleStyle: CSSProperties = { margin: 0, maxWidth: 700, fontSize: 14, lineHeight: 1.8, color: "#64748B" };
+const settingsBtnStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  padding: "7px 14px",
+  borderRadius: 999,
+  border: "1px solid #E2E8F0",
+  background: "#F8FAFC",
+  color: "#475569",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+  flexShrink: 0,
+};
 const tagRowStyle: CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 };
 const tagStyle: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: 34, padding: "0 12px", borderRadius: 999, background: "#F1F5F9", color: "#0F172A", fontSize: 12, fontWeight: 800 };
 const statsGridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 };

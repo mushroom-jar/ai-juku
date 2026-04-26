@@ -5,31 +5,46 @@ import {
   ArrowRight,
   BookOpen,
   BrainCircuit,
+  Building2,
   CalendarCheck2,
-  CheckCircle2,
+  GraduationCap,
+  HeartHandshake,
   MessageSquareText,
   Route,
-  Sparkles,
-  Trophy,
-  Zap,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function RootPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (user) {
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (roleRow?.role === "parent") redirect("/parent");
+    if (roleRow?.role === "org_staff") redirect("/org");
+
     const { data: student } = await supabase
-      .from("students").select("onboarding_done").eq("user_id", user.id).maybeSingle();
-    if (!student || !student.onboarding_done) redirect("/onboarding");
+      .from("students")
+      .select("onboarding_done, starter_questions_completed_at, ai_interview_completed_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!student || !student.onboarding_done) redirect("/billing");
+    if (!student.starter_questions_completed_at && !student.ai_interview_completed_at) redirect("/starter-questions");
     redirect("/schedule");
   }
 
   return (
     <div style={pageStyle}>
-
-      {/* ── Header ── */}
       <header style={headerStyle}>
         <div style={headerInnerStyle}>
           <Link href="/" style={logoStyle}>
@@ -37,444 +52,673 @@ export default async function RootPage() {
             <span style={logoTextStyle}>永愛塾</span>
           </Link>
           <div style={headerActionsStyle}>
-            <Link href="/login?mode=signin" style={ghostBtnStyle}>ログイン</Link>
-            <Link href="/login?mode=signup" style={primaryBtnStyle}>
-              無料ではじめる
+            <Link href="/login?mode=signin" style={ghostButtonStyle}>
+              ログイン
+            </Link>
+            <Link href="/signup/student" style={primaryButtonStyle}>
+              生徒として始める
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section style={heroStyle}>
-        <div style={heroInnerStyle}>
-          <p style={heroCatchStyle}>AIが毎日の自習をサポートする</p>
-          <h1 style={heroTitleStyle}>
-            受験勉強を、<br />
-            続けやすくする。
-          </h1>
-          <p style={heroSubStyle}>
-            志望校・レベルに合ったルートを自動生成。<br />
-            今日やることが見えて、分からない問題はすぐ質問。
-          </p>
-
-          {/* feature icon row — like vibely */}
-          <div style={featureRowStyle}>
-            {[
-              { icon: <BrainCircuit size={22} />, label: "AI面談" },
-              { icon: <Route size={22} />, label: "学習ルート" },
-              { icon: <CalendarCheck2 size={22} />, label: "タスク管理" },
-              { icon: <MessageSquareText size={22} />, label: "AI質問" },
-            ].map((f) => (
-              <div key={f.label} style={featurePillStyle}>
-                <div style={featurePillIconStyle}>{f.icon}</div>
-                <span style={featurePillLabelStyle}>{f.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <Link href="/login?mode=signup" style={ctaBtnStyle}>
-            無料ではじめる <ArrowRight size={15} />
-          </Link>
-          <p style={ctaNoteStyle}>クレジットカード登録不要</p>
-        </div>
-      </section>
-
-      {/* ── Product visual ── */}
-      <section style={productSectionStyle}>
-        <div style={productInnerStyle}>
-          <p style={sectionEyebrowStyle}>All in one</p>
-          <h2 style={productTitleStyle}>学習に必要なものが、ひとつに。</h2>
-          <div style={productMockStyle}>
-            <div style={mockHeaderStyle}>
-              <div style={mockDotStyle("#EF4444")} />
-              <div style={mockDotStyle("#F59E0B")} />
-              <div style={mockDotStyle("#22C55E")} />
-              <span style={mockUrlStyle}>eijuku.app / schedule</span>
+      <main>
+        <section style={heroStyle}>
+          <div style={heroInnerStyle}>
+            <p style={eyebrowStyle}>AIが毎日の自習をサポートする学習塾</p>
+            <h1 style={heroTitleStyle}>
+              毎日の自習が続く。
+              <br />
+              保護者も、塾も、同じ画面で見守れる。
+            </h1>
+            <p style={heroBodyStyle}>
+              永愛塾は、生徒の記録・相談・質問・学習方針をひとつにまとめた学習基盤です。
+              生徒は今日やることがすぐ分かり、保護者は学習状況を確認でき、塾や学校は複数生徒を俯瞰できます。
+            </p>
+            <div style={heroActionsStyle}>
+              <Link href="/signup/student" style={primaryCtaStyle}>
+                生徒として始める <ArrowRight size={16} />
+              </Link>
+              <Link href="/signup/parent" style={secondaryCtaStyle}>
+                保護者として始める
+              </Link>
+              <Link href="/signup/org" style={secondaryCtaStyle}>
+                塾・学校として始める
+              </Link>
             </div>
-            <div style={mockBodyStyle}>
-              {/* Left sidebar */}
-              <div style={mockSidebarStyle}>
-                {["今日", "スケジュール", "My先生", "ルート", "本棚", "演習", "進捗", "タイムライン"].map((item, i) => (
-                  <div key={item} style={{ ...mockNavItemStyle, background: i === 0 ? "#F1F5F9" : "transparent", fontWeight: i === 0 ? 800 : 600 }}>
-                    {item}
-                  </div>
-                ))}
-              </div>
-              {/* Main content */}
-              <div style={mockMainStyle}>
-                <div style={mockGreetStyle}>おはようございます 👋</div>
-                <div style={mockTodayStyle}>
-                  <div style={mockTodaySectionStyle}>
-                    <div style={mockTodayLabelStyle}>今日のタスク</div>
-                    {[
-                      { title: "基礎問題精講 数学IA", range: "p.40〜52", done: true },
-                      { title: "システム英単語", range: "101〜200番", done: true },
-                      { title: "物理のエッセンス", range: "第3章", done: false },
-                    ].map((t) => (
-                      <div key={t.title} style={mockTaskRowStyle}>
-                        <div style={{ ...mockTaskCheckStyle, background: t.done ? "#1E293B" : "#fff" }}>
-                          {t.done && <CheckCircle2 size={11} color="#fff" />}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: t.done ? "#94A3B8" : "#1E293B", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
-                          <div style={{ fontSize: 11, color: "#94A3B8" }}>{t.range}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={mockStatColStyle}>
-                    <div style={mockStatCardStyle}>
-                      <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>連続学習</div>
-                      <div style={{ fontSize: 28, fontWeight: 900, color: "#1E293B", letterSpacing: "-0.04em" }}>7<span style={{ fontSize: 14 }}>日</span></div>
-                    </div>
-                    <div style={mockStatCardStyle}>
-                      <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>今週の進捗</div>
-                      <div style={{ fontSize: 28, fontWeight: 900, color: "#1E293B", letterSpacing: "-0.04em" }}>84<span style={{ fontSize: 14 }}>%</span></div>
-                    </div>
-                    <div style={{ ...mockStatCardStyle, background: "#1E293B" }}>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 700 }}>MY先生</div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginTop: 4 }}>
-                        「今日も2問完了！このペースで行こう 💪」
-                      </div>
-                    </div>
-                  </div>
+            <div style={proofRowStyle}>
+              {[
+                { icon: <BrainCircuit size={18} />, label: "AI面談で初回方針を整理" },
+                { icon: <CalendarCheck2 size={18} />, label: "予定と勉強時間を一緒に管理" },
+                { icon: <MessageSquareText size={18} />, label: "My先生に質問と相談ができる" },
+                { icon: <ShieldCheck size={18} />, label: "保護者・塾向けの見守り導線" },
+              ].map((item) => (
+                <div key={item.label} style={proofPillStyle}>
+                  <div style={proofIconStyle}>{item.icon}</div>
+                  <span style={proofLabelStyle}>{item.label}</span>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section style={roleSectionStyle}>
+          <div style={sectionInnerStyle}>
+            <p style={sectionEyebrowStyle}>Choose your start</p>
+            <h2 style={sectionTitleStyle}>だれとして使い始めるかを最初に選べます</h2>
+            <div style={roleGridStyle}>
+              <RoleCard
+                href="/signup/student"
+                icon={<GraduationCap size={22} color="#3157B7" />}
+                title="生徒として始める"
+                subtitle="毎日の自習を進めたい人向け"
+                bullets={[
+                  "AI面談から始めて、今日やることを整理",
+                  "演習記録・質問・復習・タイムラインをまとめて使える",
+                  "1週間無料体験でAIパートナーを始められる",
+                ]}
+                accent="#3157B7"
+              />
+              <RoleCard
+                href="/signup/parent"
+                icon={<HeartHandshake size={22} color="#C26B2E" />}
+                title="保護者として始める"
+                subtitle="子どもの学習状況を見たい人向け"
+                bullets={[
+                  "今週の勉強時間、成績推移、最近の活動をまとめて確認",
+                  "AIが考える学習方針と注意点を見られる",
+                  "子どもを見守りながら、優先科目や希望勉強時間を残せる",
+                ]}
+                accent="#C26B2E"
+              />
+              <RoleCard
+                href="/signup/org"
+                icon={<Building2 size={22} color="#7C3AED" />}
+                title="塾・学校として始める"
+                subtitle="複数生徒をまとめて見たい方向け"
+                bullets={[
+                  "生徒一覧、要注意生徒、学習時間の偏りを俯瞰できる",
+                  "各生徒の学習方針・成績・最近の活動まで追える",
+                  "まずは最小構成の管理ダッシュボードから始められる",
+                ]}
+                accent="#7C3AED"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section style={featureSectionStyle}>
+          <div style={sectionInnerStyle}>
+            <p style={sectionEyebrowStyle}>Why Eiai</p>
+            <h2 style={sectionTitleStyle}>記録アプリで終わらないのが永愛塾です</h2>
+            <div style={featureGridStyle}>
+              {[
+                {
+                  icon: <BookOpen size={20} />,
+                  title: "記録が続きやすい",
+                  body: "演習記録、自由記録、勉強時間の保存まで同じ場所で進められるので、あとから見返しても何をしたかが分かります。",
+                },
+                {
+                  icon: <Users size={20} />,
+                  title: "見守る側にも価値がある",
+                  body: "保護者は学習状況と方針を確認でき、塾や学校は複数生徒を並べて見ることができます。",
+                },
+                {
+                  icon: <Route size={20} />,
+                  title: "AIが方針を整理する",
+                  body: "初回面談や日々の記録をもとに、AIが今の状態を要約し、次に何を優先するかを見える化します。",
+                },
+                {
+                  icon: <MessageSquareText size={20} />,
+                  title: "相談と質問が一体",
+                  body: "My先生の中で相談も質問もできるので、分からないところで止まらず、そのまま次の学習へ進めます。",
+                },
+              ].map((item) => (
+                <div key={item.title} style={featureCardStyle}>
+                  <div style={featureIconWrapStyle}>{item.icon}</div>
+                  <div style={featureTitleStyle}>{item.title}</div>
+                  <div style={featureBodyTextStyle}>{item.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section style={pricingSectionStyle}>
+          <div style={sectionInnerStyle}>
+            <p style={sectionEyebrowStyle}>Pricing idea</p>
+            <h2 style={sectionTitleStyle}>いまの料金と機能は、この形が一番きれいです</h2>
+            <p style={pricingLeadStyle}>
+              生徒向けは「AIパートナー」を入口にして、必要になった時に「AI塾」へ進む形が自然です。
+              保護者向けと塾向けは、学習管理ダッシュボードを軸に別商品として育てるのが良さそうです。
+            </p>
+            <div style={pricingGridStyle}>
+              <PricingCard
+                title="AIパートナー"
+                price="月額 3,480円"
+                note="1週間無料体験から始める入口"
+                features={[
+                  "ホーム、演習記録、カレンダー、振り返り",
+                  "My先生で相談・質問ができる",
+                  "質問回数は上限ありで十分使える設計",
+                  "まず自習を続けるためのプラン",
+                ]}
+              />
+              <PricingCard
+                title="AI塾"
+                price="月額 7,980円"
+                note="AIパートナー利用中に体験導線を出す上位プラン"
+                features={[
+                  "AIパートナーの機能をすべて含む",
+                  "学習方針、優先科目、最初の一週間の提案を強化",
+                  "質問回数は実質無制限で使える想定",
+                  "何を勉強すべきかまで一緒に考えるプラン",
+                ]}
+                highlight
+              />
+            </div>
+            <div style={futureBoxStyle}>
+              <div style={futureBoxTitleStyle}>今後の販売整理</div>
+              <div style={futureBoxBodyStyle}>
+                1. 生徒向けは AIパートナー を主導線にする
+                <br />
+                2. 保護者向けは「子どもの状況が見えるダッシュボード」を価値にする
+                <br />
+                3. 塾・学校向けは「複数生徒を管理できる画面」を別商品として育てる
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" style={{ ...sectionStyle, background: "#F7F7F5" }}>
-        <div style={sectionInnerStyle}>
-          <p style={sectionEyebrowStyle}>Features</p>
-          <h2 style={sectionH2Style}>自習で困りやすい場面を、まるごとカバー</h2>
-          <div style={featuresGridStyle}>
-            {[
-              { icon: <BrainCircuit size={20} />, title: "AI面談・ルート生成", body: "登録直後にAIが学力・志望校・悩みをヒアリング。今の状態に合った学習ルートを自動で作ります。" },
-              { icon: <CalendarCheck2 size={20} />, title: "今日のタスク管理", body: "スケジュール・進捗・未消化タスクが一目でわかります。何から始めるか迷いません。" },
-              { icon: <MessageSquareText size={20} />, title: "いつでもAI質問", body: "問題を送るだけで即解説。解き方・次に見直す点まで丁寧に返します。" },
-              { icon: <Sparkles size={20} />, title: "My先生（AIコーチ）", body: "学習記録をもとに毎日声をかけてくれます。不安な時も止まりそうな時も一緒に進めます。" },
-              { icon: <Route size={20} />, title: "参考書ルート", body: "武田塾ルートをベースに、志望校レベルに合わせて何をいつやるかが見える状態を作ります。" },
-              { icon: <Trophy size={20} />, title: "XP・ランキング", body: "演習のたびにXPが積み上がります。バッジ・ランキングで頑張りが目に見えます。" },
-            ].map((f) => (
-              <div key={f.title} style={fCardStyle}>
-                <div style={fIconStyle}>{f.icon}</div>
-                <div style={fTitleStyle}>{f.title}</div>
-                <div style={fBodyStyle}>{f.body}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How ── */}
-      <section id="how" style={sectionStyle}>
-        <div style={sectionInnerStyle}>
-          <p style={sectionEyebrowStyle}>How it starts</p>
-          <h2 style={sectionH2Style}>はじめる時の流れ</h2>
-          <div style={stepsGridStyle}>
-            {[
-              { step: "01", title: "アカウント登録", body: "Google またはメールアドレスで、すぐ始められます。クレジットカード不要。" },
-              { step: "02", title: "AI面談", body: "今の学力・志望校・悩みを会話で整理。自分に合う進め方が見えてきます。" },
-              { step: "03", title: "ルート確認", body: "次に何をやるかが決まった状態で学習スタート。迷う時間がなくなります。" },
-              { step: "04", title: "毎日続ける", body: "My先生・タスク・質問がつながっていて、自習が途切れにくくなります。" },
-            ].map((s, i) => (
-              <div key={s.step} style={stepCardStyle}>
-                <div style={stepNumStyle}>{s.step}</div>
-                {i < 3 && <div style={stepArrowStyle}><ArrowRight size={13} /></div>}
-                <div style={stepTitleStyle}>{s.title}</div>
-                <div style={stepBodyStyle}>{s.body}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ── */}
-      <section id="pricing" style={{ ...sectionStyle, background: "#F7F7F5" }}>
-        <div style={sectionInnerStyle}>
-          <p style={sectionEyebrowStyle}>Pricing</p>
-          <h2 style={sectionH2Style}>シンプルな料金体系</h2>
-          <p style={sectionDescStyle}>まずは無料で試せます。必要になったら、自分に合うプランに切り替えてください。</p>
-          <div style={pricingGridStyle}>
-            <PricingCard name="無料プラン" price="¥0" period="ずっと無料" features={["AI面談・ルート生成", "学習スケジュール管理", "演習記録・進捗確認", "XP・バッジ・ランキング"]} highlight={false} />
-            <PricingCard name="AIパートナー" price="¥3,480" period="/ 月（税込）" features={["無料プランの全機能", "AI質問（月30回）", "My先生コーチング", "週次セッション", "優先サポート"]} highlight={false} />
-            <PricingCard name="永愛塾プラン" price="¥7,980" period="/ 月（税込）" badge="おすすめ" features={["AIパートナーの全機能", "AI質問 無制限", "模試成績管理", "詳細学習分析", "専任コーチサポート"]} highlight={true} />
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section style={ctaSectionStyle}>
-        <div style={ctaInnerStyle}>
-          <Zap size={28} style={{ color: "#1E293B", marginBottom: 20 }} />
-          <h2 style={ctaTitleStyle}>まず無料で、今日から始めてみる。</h2>
-          <p style={ctaDescStyle}>登録は1分。AI面談から、今日の自習がすぐ始まります。</p>
-          <Link href="/login?mode=signup" style={ctaBtnStyle}>
-            無料ではじめる <ArrowRight size={15} />
-          </Link>
-          <p style={ctaNoteStyle}>クレジットカード登録不要</p>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer style={footerStyle}>
-        <div style={footerInnerStyle}>
-          <Link href="/" style={{ ...logoStyle, textDecoration: "none" }}>
-            <div style={{ ...logoBadgeStyle, width: 28, height: 28, fontSize: 10 }}>AI</div>
-            <span style={{ ...logoTextStyle, fontSize: 14 }}>永愛塾</span>
-          </Link>
-          <div style={footerLinksStyle}>
-            <a href="#features" style={footerLinkStyle}>特徴</a>
-            <a href="#how" style={footerLinkStyle}>使い方</a>
-            <a href="#pricing" style={footerLinkStyle}>料金</a>
-          </div>
-          <span style={footerCopyStyle}>© 2026 永愛塾</span>
-        </div>
-      </footer>
-
+        </section>
+      </main>
     </div>
   );
 }
 
-// ─── Sub components ───────────────────────────────────────────────────────────
-
-function PricingCard({ name, price, period, features, highlight, badge }: {
-  name: string; price: string; period: string;
-  features: string[]; highlight: boolean; badge?: string;
+function RoleCard({
+  href,
+  icon,
+  title,
+  subtitle,
+  bullets,
+  accent,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  bullets: string[];
+  accent: string;
 }) {
   return (
-    <div style={{
-      borderRadius: 22, padding: "28px 26px",
-      background: highlight ? "#1E293B" : "#fff",
-      border: highlight ? "none" : "1px solid #E8E8E4",
-    }}>
-      {badge && (
-        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, background: "#F1F5F9", color: "#64748B", fontSize: 11, fontWeight: 800, marginBottom: 14 }}>
-          {badge}
-        </span>
-      )}
-      <div style={{ fontSize: 15, fontWeight: 900, color: highlight ? "#fff" : "#1E293B", marginBottom: 8 }}>{name}</div>
-      <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: "-0.05em", color: highlight ? "#fff" : "#1E293B" }}>{price}</div>
-      <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 4 }}>{period}</div>
-      <div style={{ height: 1, background: highlight ? "rgba(255,255,255,0.08)" : "#F1F5F9", margin: "18px 0" }} />
-      {features.map((f) => (
-        <div key={f} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0" }}>
-          <CheckCircle2 size={13} style={{ color: highlight ? "#64748B" : "#94A3B8", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: highlight ? "rgba(255,255,255,0.78)" : "#475569" }}>{f}</span>
-        </div>
-      ))}
-      <Link href="/login?mode=signup" style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-        marginTop: 22, minHeight: 46, borderRadius: 999,
-        background: highlight ? "#fff" : "#2563EB",
-        color: highlight ? "#2563EB" : "#fff",
-        fontSize: 13, fontWeight: 900,
-      }}>
-        はじめる <ArrowRight size={13} />
+    <div style={roleCardStyle}>
+      <div style={{ ...roleIconStyle, background: `${accent}14` }}>{icon}</div>
+      <div style={roleTitleStyle}>{title}</div>
+      <div style={roleSubtitleStyle}>{subtitle}</div>
+      <div style={roleBulletListStyle}>
+        {bullets.map((bullet) => (
+          <div key={bullet} style={roleBulletStyle}>
+            <div style={{ ...roleBulletDotStyle, background: accent }} />
+            <span>{bullet}</span>
+          </div>
+        ))}
+      </div>
+      <Link href={href} style={{ ...roleLinkStyle, background: accent }}>
+        この入口から始める <ArrowRight size={15} />
       </Link>
     </div>
   );
 }
 
-function mockDotStyle(color: string): CSSProperties {
-  return { width: 10, height: 10, borderRadius: 999, background: color };
+function PricingCard({
+  title,
+  price,
+  note,
+  features,
+  highlight,
+}: {
+  title: string;
+  price: string;
+  note: string;
+  features: string[];
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        ...pricingCardStyle,
+        background: highlight ? "#1E293B" : "#FFFFFF",
+        border: highlight ? "1px solid #1E293B" : "1px solid #E2E8F0",
+      }}
+    >
+      <div style={{ ...pricingTitleStyle, color: highlight ? "#FFFFFF" : "#0F172A" }}>{title}</div>
+      <div style={{ ...pricingPriceStyle, color: highlight ? "#FFFFFF" : "#0F172A" }}>{price}</div>
+      <div style={{ ...pricingNoteStyle, color: highlight ? "rgba(255,255,255,0.72)" : "#64748B" }}>{note}</div>
+      <div style={pricingFeatureListStyle}>
+        {features.map((feature) => (
+          <div key={feature} style={pricingFeatureItemStyle}>
+            <div style={{ ...pricingFeatureDotStyle, background: highlight ? "#93C5FD" : "#3157B7" }} />
+            <span style={{ color: highlight ? "rgba(255,255,255,0.86)" : "#475569" }}>{feature}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+const pageStyle: CSSProperties = {
+  minHeight: "100dvh",
+  background: "#FFFFFF",
+  color: "#0F172A",
+};
 
-const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#fff", color: "#1E293B" };
-
-// Header
 const headerStyle: CSSProperties = {
-  position: "sticky", top: 0, zIndex: 100,
-  background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)",
-  borderBottom: "1px solid #F1F5F9",
+  position: "sticky",
+  top: 0,
+  zIndex: 40,
+  background: "rgba(255,255,255,0.92)",
+  backdropFilter: "blur(10px)",
+  borderBottom: "1px solid #EEF2F7",
 };
+
 const headerInnerStyle: CSSProperties = {
-  maxWidth: 1080, margin: "0 auto", padding: "0 24px",
-  height: 60, display: "flex", alignItems: "center", justifyContent: "space-between",
+  maxWidth: 1120,
+  margin: "0 auto",
+  padding: "0 24px",
+  minHeight: 68,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
 };
-const logoStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 9, color: "inherit", textDecoration: "none" };
+
+const logoStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  color: "inherit",
+  textDecoration: "none",
+};
+
 const logoBadgeStyle: CSSProperties = {
-  width: 34, height: 34, borderRadius: 9, background: "#1E293B",
-  color: "#fff", fontSize: 11, fontWeight: 900, display: "grid", placeItems: "center",
-};
-const logoTextStyle: CSSProperties = { fontSize: 16, fontWeight: 900, color: "#1E293B" };
-const headerActionsStyle: CSSProperties = { display: "flex", gap: 8, alignItems: "center" };
-const ghostBtnStyle: CSSProperties = {
-  padding: "8px 16px", borderRadius: 999, border: "1px solid #E2E8F0",
-  fontSize: 13, fontWeight: 700, color: "#64748B",
-};
-const primaryBtnStyle: CSSProperties = {
-  padding: "8px 18px", borderRadius: 999, background: "#2563EB",
-  fontSize: 13, fontWeight: 800, color: "#fff",
+  width: 36,
+  height: 36,
+  borderRadius: 11,
+  background: "#1E293B",
+  color: "#FFFFFF",
+  display: "grid",
+  placeItems: "center",
+  fontSize: 11,
+  fontWeight: 900,
 };
 
-// Hero — centered like vibely
+const logoTextStyle: CSSProperties = {
+  fontSize: 17,
+  fontWeight: 900,
+  letterSpacing: "-0.03em",
+};
+
+const headerActionsStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+};
+
+const ghostButtonStyle: CSSProperties = {
+  minHeight: 40,
+  padding: "0 16px",
+  borderRadius: 999,
+  border: "1px solid #D7E0EA",
+  color: "#475569",
+  fontSize: 13,
+  fontWeight: 800,
+  display: "inline-flex",
+  alignItems: "center",
+  textDecoration: "none",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: 40,
+  padding: "0 18px",
+  borderRadius: 999,
+  background: "#3157B7",
+  color: "#FFFFFF",
+  fontSize: 13,
+  fontWeight: 900,
+  display: "inline-flex",
+  alignItems: "center",
+  textDecoration: "none",
+};
+
 const heroStyle: CSSProperties = {
-  padding: "100px 24px 90px",
-  textAlign: "center",
-  borderBottom: "1px solid #F1F5F9",
+  padding: "96px 24px 64px",
+  borderBottom: "1px solid #EEF2F7",
 };
-const heroInnerStyle: CSSProperties = { maxWidth: 680, margin: "0 auto" };
-const heroCatchStyle: CSSProperties = {
-  fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase",
-  color: "#94A3B8", margin: "0 0 20px",
+
+const heroInnerStyle: CSSProperties = {
+  maxWidth: 920,
+  margin: "0 auto",
+  display: "grid",
+  gap: 24,
 };
+
+const eyebrowStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#64748B",
+};
+
 const heroTitleStyle: CSSProperties = {
-  fontSize: "clamp(42px, 7vw, 80px)", fontWeight: 900, lineHeight: 1.04,
-  letterSpacing: "-0.055em", color: "#0F172A", margin: "0 0 22px",
-};
-const heroSubStyle: CSSProperties = {
-  fontSize: 16, lineHeight: 1.85, color: "#64748B", margin: "0 0 40px",
-};
-
-// Feature icon row
-const featureRowStyle: CSSProperties = {
-  display: "flex", justifyContent: "center", gap: 12,
-  flexWrap: "wrap", marginBottom: 40,
-};
-const featurePillStyle: CSSProperties = {
-  display: "flex", alignItems: "center", gap: 8,
-  padding: "10px 18px", borderRadius: 999,
-  border: "1px solid #E8E8E4", background: "#FAFAFA",
-};
-const featurePillIconStyle: CSSProperties = { color: "#2563EB" };
-const featurePillLabelStyle: CSSProperties = { fontSize: 13, fontWeight: 800, color: "#1E293B" };
-
-// CTA (shared)
-const ctaBtnStyle: CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 8,
-  minHeight: 52, padding: "0 28px", borderRadius: 999,
-  background: "#2563EB", color: "#fff", fontSize: 15, fontWeight: 900,
-};
-const ctaNoteStyle: CSSProperties = { fontSize: 12, color: "#94A3B8", marginTop: 12 };
-
-// Product visual section
-const productSectionStyle: CSSProperties = { padding: "80px 24px", borderBottom: "1px solid #F1F5F9" };
-const productInnerStyle: CSSProperties = { maxWidth: 1080, margin: "0 auto" };
-const sectionEyebrowStyle: CSSProperties = {
-  fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
-  textTransform: "uppercase", color: "#94A3B8", margin: "0 0 10px",
-};
-const productTitleStyle: CSSProperties = {
-  fontSize: "clamp(26px, 3.5vw, 38px)", fontWeight: 900,
-  letterSpacing: "-0.04em", color: "#0F172A", margin: "0 0 32px",
+  margin: 0,
+  fontSize: "clamp(40px, 6vw, 72px)",
+  lineHeight: 1.05,
+  letterSpacing: "-0.06em",
+  fontWeight: 900,
 };
 
-// Mock UI
-const productMockStyle: CSSProperties = {
-  borderRadius: 18, overflow: "hidden",
+const heroBodyStyle: CSSProperties = {
+  margin: 0,
+  maxWidth: 760,
+  fontSize: 17,
+  lineHeight: 1.85,
+  color: "#475569",
+};
+
+const heroActionsStyle: CSSProperties = {
+  display: "flex",
+  gap: 12,
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const primaryCtaStyle: CSSProperties = {
+  minHeight: 52,
+  padding: "0 22px",
+  borderRadius: 999,
+  background: "#3157B7",
+  color: "#FFFFFF",
+  fontSize: 14,
+  fontWeight: 900,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  textDecoration: "none",
+};
+
+const secondaryCtaStyle: CSSProperties = {
+  minHeight: 52,
+  padding: "0 20px",
+  borderRadius: 999,
+  border: "1px solid #D7E0EA",
+  color: "#334155",
+  fontSize: 14,
+  fontWeight: 800,
+  display: "inline-flex",
+  alignItems: "center",
+  textDecoration: "none",
+};
+
+const proofRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  alignItems: "center",
+};
+
+const proofPillStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  borderRadius: 999,
   border: "1px solid #E2E8F0",
-  boxShadow: "0 24px 80px rgba(15,23,42,0.1)",
-};
-const mockHeaderStyle: CSSProperties = {
-  display: "flex", alignItems: "center", gap: 6,
-  padding: "10px 16px", background: "#F8FAFC",
-  borderBottom: "1px solid #E2E8F0",
-};
-const mockUrlStyle: CSSProperties = { fontSize: 11, color: "#94A3B8", marginLeft: 10 };
-const mockBodyStyle: CSSProperties = { display: "flex", height: 340 };
-const mockSidebarStyle: CSSProperties = {
-  width: 120, padding: "16px 8px", background: "#FAFAFA",
-  borderRight: "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: 2,
-};
-const mockNavItemStyle: CSSProperties = {
-  padding: "7px 10px", borderRadius: 8,
-  fontSize: 12, color: "#475569",
-};
-const mockMainStyle: CSSProperties = { flex: 1, padding: "20px 24px", overflow: "hidden" };
-const mockGreetStyle: CSSProperties = { fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 16 };
-const mockTodayStyle: CSSProperties = { display: "grid", gridTemplateColumns: "1fr 180px", gap: 16, height: "100%" };
-const mockTodaySectionStyle: CSSProperties = {};
-const mockTodayLabelStyle: CSSProperties = { fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 };
-const mockTaskRowStyle: CSSProperties = {
-  display: "flex", alignItems: "center", gap: 10,
-  padding: "8px 10px", borderRadius: 10, marginBottom: 4,
-  background: "#F8FAFC", border: "1px solid #F1F5F9",
-};
-const mockTaskCheckStyle: CSSProperties = {
-  width: 18, height: 18, borderRadius: 999,
-  border: "1.5px solid #CBD5E1", display: "grid", placeItems: "center", flexShrink: 0,
-};
-const mockStatColStyle: CSSProperties = { display: "grid", gap: 10, alignContent: "start" };
-const mockStatCardStyle: CSSProperties = {
-  borderRadius: 12, padding: "12px 14px",
-  background: "#F8FAFC", border: "1px solid #F1F5F9",
+  background: "#F8FAFC",
+  padding: "10px 14px",
 };
 
-// Sections
-const sectionStyle: CSSProperties = { padding: "80px 24px" };
-const sectionInnerStyle: CSSProperties = { maxWidth: 1080, margin: "0 auto" };
-const sectionH2Style: CSSProperties = {
-  fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 900,
-  letterSpacing: "-0.04em", color: "#0F172A", margin: "0 0 36px",
+const proofIconStyle: CSSProperties = {
+  color: "#3157B7",
+  display: "grid",
+  placeItems: "center",
 };
-const sectionDescStyle: CSSProperties = { fontSize: 15, lineHeight: 1.8, color: "#64748B", margin: "-24px 0 40px", maxWidth: 540 };
 
-// Features grid
-const featuresGridStyle: CSSProperties = {
-  display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12,
+const proofLabelStyle: CSSProperties = {
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#1E293B",
 };
-const fCardStyle: CSSProperties = {
-  borderRadius: 18, border: "1px solid #E8E8E4",
-  padding: "22px 20px 24px", background: "#fff",
-};
-const fIconStyle: CSSProperties = {
-  width: 40, height: 40, borderRadius: 12,
-  background: "#F1F5F9", color: "#475569",
-  display: "grid", placeItems: "center", marginBottom: 14,
-};
-const fTitleStyle: CSSProperties = { fontSize: 14, fontWeight: 900, color: "#0F172A", marginBottom: 8 };
-const fBodyStyle: CSSProperties = { fontSize: 13, lineHeight: 1.8, color: "#64748B" };
 
-// Steps
-const stepsGridStyle: CSSProperties = {
-  display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, position: "relative",
+const roleSectionStyle: CSSProperties = {
+  padding: "72px 24px",
 };
-const stepCardStyle: CSSProperties = {
-  borderRadius: 18, border: "1px solid #E8E8E4",
-  padding: "22px 18px", background: "#F7F7F5", position: "relative",
-};
-const stepNumStyle: CSSProperties = {
-  fontSize: 30, fontWeight: 900, letterSpacing: "-0.06em", color: "#E2E8F0", marginBottom: 10,
-};
-const stepArrowStyle: CSSProperties = {
-  position: "absolute", right: -9, top: "50%", transform: "translateY(-50%)",
-  width: 18, height: 18, borderRadius: 999, background: "#fff",
-  border: "1px solid #E2E8F0", display: "grid", placeItems: "center", color: "#CBD5E1", zIndex: 1,
-};
-const stepTitleStyle: CSSProperties = { fontSize: 14, fontWeight: 900, color: "#0F172A", marginBottom: 8 };
-const stepBodyStyle: CSSProperties = { fontSize: 13, lineHeight: 1.8, color: "#64748B" };
 
-// Pricing
+const featureSectionStyle: CSSProperties = {
+  padding: "32px 24px 72px",
+};
+
+const pricingSectionStyle: CSSProperties = {
+  padding: "0 24px 84px",
+};
+
+const sectionInnerStyle: CSSProperties = {
+  maxWidth: 1120,
+  margin: "0 auto",
+};
+
+const sectionEyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#94A3B8",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(28px, 3.6vw, 40px)",
+  lineHeight: 1.18,
+  letterSpacing: "-0.04em",
+  fontWeight: 900,
+};
+
+const roleGridStyle: CSSProperties = {
+  marginTop: 26,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+};
+
+const roleCardStyle: CSSProperties = {
+  borderRadius: 24,
+  border: "1px solid #E2E8F0",
+  background: "#FFFFFF",
+  padding: 24,
+  display: "grid",
+  gap: 14,
+  boxShadow: "0 10px 30px rgba(15,23,42,0.04)",
+};
+
+const roleIconStyle: CSSProperties = {
+  width: 48,
+  height: 48,
+  borderRadius: 16,
+  display: "grid",
+  placeItems: "center",
+};
+
+const roleTitleStyle: CSSProperties = {
+  fontSize: 20,
+  fontWeight: 900,
+  letterSpacing: "-0.03em",
+  color: "#0F172A",
+};
+
+const roleSubtitleStyle: CSSProperties = {
+  marginTop: -6,
+  fontSize: 13,
+  color: "#64748B",
+  lineHeight: 1.7,
+};
+
+const roleBulletListStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+  minHeight: 120,
+};
+
+const roleBulletStyle: CSSProperties = {
+  display: "flex",
+  gap: 10,
+  alignItems: "flex-start",
+  fontSize: 13,
+  color: "#475569",
+  lineHeight: 1.7,
+};
+
+const roleBulletDotStyle: CSSProperties = {
+  width: 8,
+  height: 8,
+  borderRadius: 999,
+  marginTop: 7,
+  flexShrink: 0,
+};
+
+const roleLinkStyle: CSSProperties = {
+  minHeight: 46,
+  borderRadius: 999,
+  color: "#FFFFFF",
+  fontSize: 14,
+  fontWeight: 900,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  textDecoration: "none",
+};
+
+const featureGridStyle: CSSProperties = {
+  marginTop: 24,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 16,
+};
+
+const featureCardStyle: CSSProperties = {
+  borderRadius: 22,
+  border: "1px solid #E2E8F0",
+  background: "#F8FAFC",
+  padding: 22,
+  display: "grid",
+  gap: 12,
+};
+
+const featureIconWrapStyle: CSSProperties = {
+  width: 42,
+  height: 42,
+  borderRadius: 14,
+  background: "#FFFFFF",
+  border: "1px solid #E2E8F0",
+  display: "grid",
+  placeItems: "center",
+  color: "#3157B7",
+};
+
+const featureTitleStyle: CSSProperties = {
+  fontSize: 17,
+  fontWeight: 900,
+  color: "#0F172A",
+};
+
+const featureBodyTextStyle: CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.75,
+  color: "#475569",
+};
+
+const pricingLeadStyle: CSSProperties = {
+  margin: "14px 0 0",
+  maxWidth: 760,
+  fontSize: 15,
+  lineHeight: 1.8,
+  color: "#475569",
+};
+
 const pricingGridStyle: CSSProperties = {
-  display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12, alignItems: "start",
+  marginTop: 24,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
 };
 
-// CTA section — centered like vibely hero
-const ctaSectionStyle: CSSProperties = {
-  padding: "100px 24px",
-  textAlign: "center",
-  borderTop: "1px solid #F1F5F9",
+const pricingCardStyle: CSSProperties = {
+  borderRadius: 24,
+  padding: 24,
+  display: "grid",
+  gap: 10,
 };
-const ctaInnerStyle: CSSProperties = { maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center" };
-const ctaTitleStyle: CSSProperties = {
-  fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 900,
-  letterSpacing: "-0.04em", color: "#0F172A", margin: "0 0 14px",
-};
-const ctaDescStyle: CSSProperties = { fontSize: 15, color: "#64748B", margin: "0 0 28px", lineHeight: 1.8 };
 
-// Footer
-const footerStyle: CSSProperties = { borderTop: "1px solid #F1F5F9", padding: "24px" };
-const footerInnerStyle: CSSProperties = {
-  maxWidth: 1080, margin: "0 auto",
-  display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap",
+const pricingTitleStyle: CSSProperties = {
+  fontSize: 18,
+  fontWeight: 900,
+  letterSpacing: "-0.03em",
 };
-const footerLinksStyle: CSSProperties = { display: "flex", gap: 20, flex: 1 };
-const footerLinkStyle: CSSProperties = { fontSize: 12, color: "#94A3B8", fontWeight: 700, textDecoration: "none" };
-const footerCopyStyle: CSSProperties = { fontSize: 12, color: "#CBD5E1" };
+
+const pricingPriceStyle: CSSProperties = {
+  fontSize: 34,
+  lineHeight: 1.1,
+  fontWeight: 900,
+  letterSpacing: "-0.05em",
+};
+
+const pricingNoteStyle: CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.7,
+};
+
+const pricingFeatureListStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+  paddingTop: 10,
+};
+
+const pricingFeatureItemStyle: CSSProperties = {
+  display: "flex",
+  gap: 10,
+  alignItems: "flex-start",
+  fontSize: 13,
+  lineHeight: 1.7,
+};
+
+const pricingFeatureDotStyle: CSSProperties = {
+  width: 8,
+  height: 8,
+  borderRadius: 999,
+  marginTop: 7,
+  flexShrink: 0,
+};
+
+const futureBoxStyle: CSSProperties = {
+  marginTop: 20,
+  borderRadius: 20,
+  border: "1px solid #E2E8F0",
+  background: "#F8FAFC",
+  padding: 20,
+  display: "grid",
+  gap: 10,
+};
+
+const futureBoxTitleStyle: CSSProperties = {
+  fontSize: 15,
+  fontWeight: 900,
+  color: "#0F172A",
+};
+
+const futureBoxBodyStyle: CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.85,
+  color: "#475569",
+};

@@ -28,6 +28,13 @@ type RouteItem = {
   books: BookInfo | null;
 };
 
+type RouteStrategy = {
+  overview: string;
+  prioritySubjects: string[];
+  firstWeekPolicy: string;
+  warnings: string[];
+};
+
 type StudentInfo = {
   id: string;
   name: string;
@@ -37,6 +44,7 @@ type StudentInfo = {
   subjects: string[];
   plan: string;
   exam_date: string | null;
+  route_strategy: RouteStrategy | null;
 };
 
 type SubjectKey = "math" | "physics" | "chemistry" | "biology" | "english" | "japanese" | "world_history" | "japanese_history" | "geography" | "civics" | "information" | "other";
@@ -146,7 +154,7 @@ export default function RoutePage() {
 
     const { data: studentData } = await supabase
       .from("students")
-      .select("id, name, current_level, target_level, target_univ, subjects, plan, exam_date")
+      .select("id, name, current_level, target_level, target_univ, subjects, plan, exam_date, route_strategy")
       .eq("user_id", user.id)
       .single();
 
@@ -273,6 +281,8 @@ export default function RoutePage() {
             accent="#9333EA"
           />
         </section>
+
+        {student.route_strategy && <RouteStrategyCard strategy={student.route_strategy} />}
 
         <section style={cardStyle}>
           <div style={sectionHeadStyle}>
@@ -446,6 +456,102 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
     </div>
   );
 }
+
+function RouteStrategyCard({ strategy }: { strategy: RouteStrategy }) {
+  return (
+    <section style={strategyCardStyle}>
+      <div style={sectionHeadStyle}>
+        <div>
+          <p style={sectionEyebrowStyle}>AI Strategy</p>
+          <h2 style={sectionTitleStyle}>AIが提案する学習戦略</h2>
+        </div>
+      </div>
+      <p style={strategyOverviewStyle}>{strategy.overview}</p>
+      <div style={strategyGridStyle}>
+        <div style={strategyItemStyle}>
+          <p style={strategyItemLabelStyle}>優先科目</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {strategy.prioritySubjects.map((s) => (
+              <span key={s} style={subjectPillStyle(s)}>{SUBJECT_LABEL[s] ?? s}</span>
+            ))}
+          </div>
+        </div>
+        <div style={strategyItemStyle}>
+          <p style={strategyItemLabelStyle}>最初の1週間</p>
+          <p style={strategyItemValueStyle}>{strategy.firstWeekPolicy}</p>
+        </div>
+      </div>
+      {strategy.warnings?.length > 0 && (
+        <div style={strategyWarningsStyle}>
+          <p style={strategyItemLabelStyle}>注意点</p>
+          <ul style={{ margin: 0, padding: "0 0 0 18px", display: "grid", gap: 6 }}>
+            {strategy.warnings.map((w, i) => (
+              <li key={i} style={{ fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)" }}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const strategyCardStyle: React.CSSProperties = {
+  background: "linear-gradient(135deg, #EEF4FF 0%, #F8FAFF 100%)",
+  border: "1px solid #B2DDFF",
+  borderRadius: 20,
+  padding: 18,
+  display: "grid",
+  gap: 14,
+};
+
+const strategyOverviewStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  lineHeight: 1.8,
+  color: "var(--text-primary)",
+  fontWeight: 600,
+};
+
+const strategyGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: 12,
+};
+
+const strategyItemStyle: React.CSSProperties = {
+  background: "#FFFFFF",
+  borderRadius: 14,
+  padding: "12px 14px",
+  display: "grid",
+  gap: 8,
+  border: "1px solid var(--border)",
+};
+
+const strategyItemLabelStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 11,
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "#175CD3",
+};
+
+const strategyItemValueStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  lineHeight: 1.7,
+  color: "var(--text-primary)",
+  fontWeight: 600,
+};
+
+const strategyWarningsStyle: React.CSSProperties = {
+  background: "#FFFBEB",
+  border: "1px solid #FDE68A",
+  borderRadius: 14,
+  padding: "12px 14px",
+  display: "grid",
+  gap: 8,
+};
 
 const pageStyle: React.CSSProperties = {
   maxWidth: 980,

@@ -10,13 +10,14 @@ const INTERVIEW_SYSTEM = `
 
 聞きたいこと:
 1. 学年
-2. 志望校
-3. 現在の学力感
-4. 勉強している科目
-5. 得意科目と苦手科目
-6. 平日と休日の勉強時間
-7. 勉強でいちばん詰まりやすいこと
-8. 勉強スタイルの傾向
+2. 志望校・志望学部（まだ決まっていなければイメージや方向性）
+3. 受験方式（一般入試 / 共通テスト利用 / 推薦など）
+4. 受験科目
+5. 各科目の現在の得意・不安の感覚（ざっくりでOK）
+6. 直近の模試の結果やレベル感
+7. 平日と休日の勉強時間
+8. 勉強でいちばん詰まりやすいこと
+9. 勉強スタイルの傾向
 
 会話ルール:
 - 一度に聞くのは多くても2つまで
@@ -35,11 +36,15 @@ const EXTRACT_PROMPT = `
 - targetLevel は 1 から 5 の整数
 - currentLevel は 1 から 5 の整数
 - examYear は西暦4桁の整数
-- subjects は "math" | "physics" | "chemistry" | "english" の配列
+- subjects は "math" | "physics" | "chemistry" | "biology" | "english" | "japanese" | "world_history" | "japanese_history" | "geography" | "civics" の配列
 - studyStyle は "planner" | "steady" | "sprinter" | "mood"
 - biggestBlocker は "start" | "continue" | "questions" | "schedule"
 - weekdayMinutes, holidayMinutes は分単位の整数
 - strongSubject, weakSubject は科目コードまたは null
+- subjectLevels は { 科目コード: 1〜5の整数 } のオブジェクト（ログから推定）
+- lastMockLevel は 1〜5 の整数または null（模試・偏差値感から推定: 1=偏差値40台以下, 2=50前後, 3=55前後, 4=60前後, 5=65以上）
+- examType は "general" | "csat" | "recommendation" | null（一般入試=general, 共通テスト利用=csat, 推薦=recommendation）
+- targetFaculty は志望学部名（文字列またはnull）
 - mode.aiTone は "cheerful" | "calm" | "strict" | "friendly"
 
 targetLevel の目安:
@@ -54,10 +59,14 @@ targetLevel の目安:
   "name": "表示名",
   "grade": 2,
   "targetUniv": "志望校名",
+  "targetFaculty": "経済学部",
+  "examType": "general",
   "targetLevel": 3,
   "examYear": 2027,
   "subjects": ["math", "english"],
+  "subjectLevels": { "math": 2, "english": 3 },
   "currentLevel": 2,
+  "lastMockLevel": 2,
   "studyStyle": "steady",
   "biggestBlocker": "schedule",
   "weekdayMinutes": 120,
@@ -136,4 +145,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

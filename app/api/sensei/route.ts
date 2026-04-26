@@ -21,6 +21,9 @@ const BASE_PROMPT = `
 - 行動導線を1つだけ付けたい時は、文末に次の形式で1つだけ付ける
   <!--ACTION:{"type":"record","label":"記録する"}-->
 - action type は record | schedule | practice | shelf | question のみ
+- ホーム画面の一言メッセージを更新したい場合のみ、文末に次の形式で付ける
+  <!--SET_HOME_MESSAGE:{"message":"更新後のメッセージ（40字以内）"}-->
+  これを使うのは生徒が「今日のメッセージを変えて」と明示的に頼んだ時だけ
 
 避けること:
 - 高圧的な口調
@@ -40,6 +43,23 @@ const BLOCKER_LABEL: Record<string, string> = {
   continue: "続けている途中で止まりやすい",
   questions: "分からない問題で止まりやすい",
   schedule: "何をやるか迷いやすい",
+};
+
+const PERSONALITY_ADDITION: Record<string, string> = {
+  strict: `
+
+口調の追加指示 (厳しめ):
+- 甘い言葉より「なぜそれでは足りないか」を明示する
+- 根拠なき慰めは使わない。改善点を遠慮なく出す
+- 褒める場合は具体的な根拠がある時だけ
+- 「本当にこれで受かると思う?」と自問させる言葉を使う`,
+  friendly: `
+
+口調の追加指示 (友達感覚):
+- 「〜だよ」「〜だね」「〜じゃない?」のようなカジュアルな語尾を使う
+- 一緒に考えるスタンスで、断定より提案を好む
+- 適度に軽い言葉で親近感を出しつつ、核心は外さない`,
+  balanced: "",
 };
 
 type ApiMessage = { role: "user" | "model"; content: string };
@@ -67,7 +87,7 @@ async function buildStudentContext(userId: string): Promise<string> {
     lines.push(`受験まで: ${days > 0 ? `あと${days}日` : "受験日を過ぎています"}`);
   }
   if (student.subjects?.length) {
-    lines.push(`使用科目: ${(student.subjects as string[]).map((subject) => SUBJECT_LABEL[subject] ?? subject).join(" / ")}`);
+    lines.push(`使用科目: ${(student.subjects as string[]).map((s) => SUBJECT_LABEL[s] ?? s).join(" / ")}`);
   }
   if (typeof student.current_level === "number") {
     lines.push(`現在レベル: Lv.${student.current_level}`);
@@ -85,10 +105,10 @@ async function buildStudentContext(userId: string): Promise<string> {
   }
 
   if (student.strength_subjects?.length) {
-    lines.push(`得意寄り: ${(student.strength_subjects as string[]).map((subject) => SUBJECT_LABEL[subject] ?? subject).join(" / ")}`);
+    lines.push(`得意寄り: ${(student.strength_subjects as string[]).map((s) => SUBJECT_LABEL[s] ?? s).join(" / ")}`);
   }
   if (student.weakness_subjects?.length) {
-    lines.push(`不安寄り: ${(student.weakness_subjects as string[]).map((subject) => SUBJECT_LABEL[subject] ?? subject).join(" / ")}`);
+    lines.push(`不安寄り: ${(student.weakness_subjects as string[]).map((s) => SUBJECT_LABEL[s] ?? s).join(" / ")}`);
   }
   if (student.onboarding_summary) {
     lines.push("初回面談の要約:");
@@ -110,10 +130,7 @@ async function buildStudentContext(userId: string): Promise<string> {
         return book ? `${book.title} (${SUBJECT_LABEL[book.subject] ?? book.subject})` : null;
       })
       .filter(Boolean);
-
-    if (activeBooks.length) {
-      lines.push(`進行中ルート: ${activeBooks.join(" / ")}`);
-    }
+    if (activeBooks.length) lines.push(`進行中ルート: ${activeBooks.join(" / ")}`);
   }
 
   const twoWeeksAgo = new Date();
@@ -127,11 +144,10 @@ async function buildStudentContext(userId: string): Promise<string> {
 
   const results = recentResults ?? [];
   if (results.length > 0) {
-    const perfect = results.filter((result) => result.result === "perfect").length;
-    const wrong = results.filter((result) => result.result === "wrong").length;
-    const unsure = results.filter((result) => result.result === "unsure").length;
+    const perfect = results.filter((r) => r.result === "perfect").length;
+    const wrong = results.filter((r) => r.result === "wrong").length;
+    const unsure = results.filter((r) => r.result === "unsure").length;
     const masteryRate = Math.round((perfect / results.length) * 100);
-
     lines.push(`直近14日の記録: ${results.length}件 / 理解率 ${masteryRate}% / 理解 ${perfect} / 不安 ${unsure} / 苦戦 ${wrong}`);
   } else {
     lines.push("直近14日の記録はまだ少なめです。");
@@ -143,56 +159,121 @@ async function buildStudentContext(userId: string): Promise<string> {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    if (!user) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+    const body = await req.json() as {
+      messages?: ApiMessage[];
+      sessionId?: string;
+      message?: string;
+    };
 
-    const { messages } = (await req.json()) as { messages: ApiMessage[] };
-    if (!messages?.length) {
-      return NextResponse.json({ error: "messages required" }, { status: 400 });
+    let historyForGemini: { role: string; parts: { text: string }[] }[] = [];
+    let currentMessage = "";
+    let sessionId: string | null = null;
+
+    if (body.sessionId && body.message) {
+      // Session-based mode: load history from DB
+      sessionId = body.sessionId;
+      currentMessage = body.message;
+
+      const { data: student } = await supabase.from("students").select("id").eq("user_id", user.id).single();
+      if (!student) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+      const { data: session } = await supabase
+        .from("chat_sessions").select("id")
+        .eq("id", sessionId).eq("student_id", student.id).single();
+      if (!session) return NextResponse.json({ error: "session not found" }, { status: 404 });
+
+      // Load last 40 messages for context
+      const { data: dbMsgs } = await supabase
+        .from("chat_messages").select("role, content")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true })
+        .limit(40);
+
+      const rawHistory = (dbMsgs ?? []).map((m) => ({
+        role: m.role,
+        parts: [{ text: m.content }],
+      }));
+      const firstUserIndex = rawHistory.findIndex((m) => m.role === "user");
+      historyForGemini = firstUserIndex >= 0 ? rawHistory.slice(firstUserIndex) : [];
+
+    } else if (body.messages?.length) {
+      // Legacy stateless mode
+      currentMessage = body.messages[body.messages.length - 1].content;
+      const rawHistory = body.messages.slice(0, -1).map((m) => ({
+        role: m.role,
+        parts: [{ text: m.content }],
+      }));
+      const firstUserIndex = rawHistory.findIndex((m) => m.role === "user");
+      historyForGemini = firstUserIndex >= 0 ? rawHistory.slice(firstUserIndex) : [];
+    } else {
+      return NextResponse.json({ error: "messages or sessionId+message required" }, { status: 400 });
     }
 
     let studentContext = "";
+    let personalityKey = "balanced";
     try {
-      studentContext = await buildStudentContext(user.id);
+      [studentContext] = await Promise.all([
+        buildStudentContext(user.id),
+        supabase
+          .from("students")
+          .select("sensei_personality")
+          .eq("user_id", user.id)
+          .single()
+          .then(({ data }) => {
+            personalityKey = (data?.sensei_personality as string | null) ?? "balanced";
+          }),
+      ]);
     } catch (error) {
       console.error("[sensei] buildStudentContext error:", error);
     }
 
-    const systemPrompt = studentContext ? `${BASE_PROMPT}\n\n${studentContext}` : BASE_PROMPT;
+    const personalityAddition = PERSONALITY_ADDITION[personalityKey] ?? "";
+    const fullPrompt = `${BASE_PROMPT}${personalityAddition}`;
+    const systemPrompt = studentContext ? `${fullPrompt}\n\n${studentContext}` : fullPrompt;
+    const model = genAI.getGenerativeModel({ model: AI_MODEL, systemInstruction: systemPrompt });
 
-    const model = genAI.getGenerativeModel({
-      model: AI_MODEL,
-      systemInstruction: systemPrompt,
-    });
-
-    const rawHistory = messages.slice(0, -1).map((message) => ({
-      role: message.role,
-      parts: [{ text: message.content }],
-    }));
-    const firstUserIndex = rawHistory.findIndex((message) => message.role === "user");
-    const history = firstUserIndex >= 0 ? rawHistory.slice(firstUserIndex) : [];
-
-    const chat = model.startChat({ history });
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessage(lastMessage.content);
+    const chat = model.startChat({ history: historyForGemini });
+    const result = await chat.sendMessage(currentMessage);
     const text = result.response.text();
 
     const actionMatch = text.match(/<!--ACTION:(.+?)-->/);
     let action: { type: string; label: string } | null = null;
     let reply = text;
-
     if (actionMatch) {
       try {
         action = JSON.parse(actionMatch[1]);
-        reply = text.replace(/<!--ACTION:.+?-->/, "").trim();
+        reply = reply.replace(/<!--ACTION:.+?-->/, "").trim();
       } catch {
         action = null;
       }
+    }
+
+    // Handle home_message update request from AI
+    const homeMessageMatch = reply.match(/<!--SET_HOME_MESSAGE:(.+?)-->/);
+    if (homeMessageMatch) {
+      try {
+        const { message } = JSON.parse(homeMessageMatch[1]) as { message?: string };
+        if (message) {
+          await supabase.from("students").update({ home_message: message }).eq("user_id", user.id);
+        }
+      } catch { /* ignore malformed marker */ }
+      reply = reply.replace(/<!--SET_HOME_MESSAGE:.+?-->/, "").trim();
+    }
+
+    // Persist messages and update session timestamp
+    if (sessionId) {
+      await Promise.all([
+        supabase.from("chat_messages").insert([
+          { session_id: sessionId, role: "user", content: currentMessage, kind: "chat" },
+          { session_id: sessionId, role: "model", content: reply, kind: "chat" },
+        ]),
+        supabase.from("chat_sessions")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", sessionId),
+      ]);
     }
 
     return NextResponse.json({ reply, action });

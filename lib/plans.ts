@@ -37,7 +37,7 @@ export const PLAN_DEFINITIONS = {
     name: "AIパートナー",
     shortName: "AIパートナー",
     monthlyPrice: 3480,
-    yearlyPrice: 35496,
+    yearlyPrice: 34800,
     monthlyPriceId: process.env.STRIPE_AI_SUPPORT_MONTHLY_PRICE_ID ?? process.env.STRIPE_BASIC_PRICE_ID ?? "",
     yearlyPriceId: process.env.STRIPE_AI_SUPPORT_YEARLY_PRICE_ID ?? "",
   },
@@ -46,7 +46,7 @@ export const PLAN_DEFINITIONS = {
     name: "永愛塾",
     shortName: "永愛塾",
     monthlyPrice: 7980,
-    yearlyPrice: 81396,
+    yearlyPrice: 79800,
     monthlyPriceId: process.env.STRIPE_AI_JUKU_MONTHLY_PRICE_ID ?? process.env.STRIPE_PREMIUM_PRICE_ID ?? "",
     yearlyPriceId: process.env.STRIPE_AI_JUKU_YEARLY_PRICE_ID ?? "",
   },
@@ -90,4 +90,19 @@ export function getBillingIntervalFromPriceId(priceId: string): BillingInterval 
     return "yearly";
   }
   return "monthly";
+}
+
+// まとめ払い（一括）の金額
+export const LUMP_SUM_OPTIONS = [
+  { months: 1,  label: "1ヶ月",  discountPct: 0 },
+  { months: 3,  label: "3ヶ月",  discountPct: 5 },
+  { months: 12, label: "12ヶ月", discountPct: 17 },
+] as const;
+
+export type LumpSumMonths = 1 | 3 | 12;
+
+export function getLumpSumAmount(plan: Exclude<StudentPlan, "free">, months: LumpSumMonths): number {
+  const monthly = PLAN_DEFINITIONS[plan].monthlyPrice;
+  const option = LUMP_SUM_OPTIONS.find((o) => o.months === months)!;
+  return Math.floor(monthly * months * (1 - option.discountPct / 100));
 }
