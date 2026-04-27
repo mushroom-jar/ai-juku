@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppLayout from "@/app/components/AppLayout";
 import Link from "next/link";
-import { CheckCircle2, Circle, ChevronDown, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ClipboardList, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
 
 type TodoItem = {
   id: string; title: string; category: "task" | "review";
@@ -190,9 +190,9 @@ export default function TodoPage() {
               <div style={emptyStyle}>読み込み中...</div>
             ) : taskPending.length === 0 && taskDone.length === 0 ? (
               <div style={emptyCardStyle}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#64748B" }}>タスクがありません</div>
-                <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>上の入力欄かAI提案から追加できます</div>
+                <ClipboardList size={40} color="#CBD5E1" strokeWidth={1.5} />
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#64748B", marginTop: 12 }}>タスクがありません</div>
+                <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>＋ボタンかAI提案から追加できます</div>
               </div>
             ) : (
               <div style={listStyle}>
