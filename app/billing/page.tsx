@@ -2,7 +2,6 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLAN_DEFINITIONS, type BillingInterval } from "@/lib/plans";
 
@@ -36,6 +35,7 @@ export default function BillingPage() {
   const searchParams = useSearchParams();
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [freeLoading, setFreeLoading] = useState(false);
   const [error, setError] = useState("");
   const [yearlyAvailable, setYearlyAvailable] = useState(false);
 
@@ -62,6 +62,18 @@ export default function BillingPage() {
     }),
     [interval]
   );
+
+  async function handleFreeStart() {
+    setFreeLoading(true);
+    setError("");
+    const res = await fetch("/api/billing/free-start", { method: "POST" });
+    if (res.ok) {
+      router.push("/starter-questions");
+    } else {
+      setFreeLoading(false);
+      setError("無料プランの開始に失敗しました。");
+    }
+  }
 
   async function handleCheckout(planKey: Tier) {
     setLoadingKey(planKey);
@@ -111,10 +123,21 @@ export default function BillingPage() {
           )}
         </div>
 
-        <div style={topActionRowStyle}>
-          <Link href={nextPath} style={skipLinkStyle}>
-            無料で続ける
-          </Link>
+        {/* 無料スタートボタン */}
+        <div style={freeStartBoxStyle}>
+          <div>
+            <div style={freeStartTitleStyle}>まずは無料で試す</div>
+            <div style={freeStartDescStyle}>クレジットカード不要。基本機能をすぐ使えます。</div>
+          </div>
+          <button onClick={handleFreeStart} disabled={freeLoading} style={freeStartButtonStyle}>
+            {freeLoading ? "準備中..." : "無料ではじめる →"}
+          </button>
+        </div>
+
+        <div style={dividerStyle}>
+          <div style={dividerLineStyle} />
+          <span style={dividerTextStyle}>またはプランを選んで始める</span>
+          <div style={dividerLineStyle} />
         </div>
 
         <div style={gridStyle}>
@@ -225,24 +248,63 @@ const activeSwitchStyle: CSSProperties = {
   boxShadow: "0 4px 12px rgba(35, 56, 118, 0.08)",
 };
 
-const topActionRowStyle: CSSProperties = {
+const freeStartBoxStyle: CSSProperties = {
+  marginTop: 24,
+  marginBottom: 8,
+  padding: "20px 24px",
+  borderRadius: 20,
+  background: "#F0F7FF",
+  border: "1px solid #C7DEFF",
   display: "flex",
-  justifyContent: "flex-end",
-  margin: "18px 0 16px",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  flexWrap: "wrap",
 };
 
-const skipLinkStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 44,
-  padding: "0 16px",
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.86)",
-  border: "1px solid rgba(148,163,184,0.16)",
-  fontSize: 13,
-  fontWeight: 800,
+const freeStartTitleStyle: CSSProperties = {
+  fontSize: 16,
+  fontWeight: 900,
   color: "#0F172A",
+};
+
+const freeStartDescStyle: CSSProperties = {
+  marginTop: 4,
+  fontSize: 13,
+  color: "#475569",
+};
+
+const freeStartButtonStyle: CSSProperties = {
+  minHeight: 48,
+  padding: "0 24px",
+  borderRadius: 14,
+  background: "#3157B7",
+  color: "#FFFFFF",
+  fontSize: 15,
+  fontWeight: 900,
+  border: "none",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const dividerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  margin: "24px 0 16px",
+};
+
+const dividerLineStyle: CSSProperties = {
+  flex: 1,
+  height: 1,
+  background: "#E4E7EC",
+};
+
+const dividerTextStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#94A3B8",
+  whiteSpace: "nowrap",
 };
 
 const gridStyle: CSSProperties = {
