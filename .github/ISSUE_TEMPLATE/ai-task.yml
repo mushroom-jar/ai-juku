@@ -1,0 +1,46 @@
+name: AI Task
+description: スマホからでも使いやすい AI 実装依頼テンプレート
+title: "[AI Task] "
+labels:
+  - ai-task
+body:
+  - type: input
+    id: target
+    attributes:
+      label: 対象画面・対象ファイル
+      description: 例: 設定画面、/schedule、AppLayout.tsx
+      placeholder: 例: 設定画面
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: いま困っていること
+      description: 何が見づらいか、何が壊れているかを書いてください
+      placeholder: 例: 情報が多すぎて見づらい
+    validations:
+      required: true
+
+  - type: textarea
+    id: desired
+    attributes:
+      label: こう変えたい
+      description: 完成イメージを短く書いてください
+      placeholder: 例: アカウント / プラン / 学習設定 / 連携で分けたい
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 触ってほしくない範囲・制約
+      description: 壊してほしくない処理や守りたい条件
+      placeholder: 例: インラインCSSのみ。課金処理は変更しない
+
+  - type: textarea
+    id: memo
+    attributes:
+      label: 補足メモ
+      description: スクショの状況、再現手順、優先順位など
+      placeholder: 例: スマホ幅で特に気になる
