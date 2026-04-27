@@ -164,11 +164,12 @@ export default function TodoPage() {
           </div>
 
           {/* 週カレンダー */}
-          {!isCurrentWeek && (
-            <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} style={backToTodayStyle}>
-              今週に戻る
-            </button>
-          )}
+          <button
+            onClick={() => { setWeekOffset(0); setSelectedDate(today); }}
+            style={{ ...backToTodayStyle, visibility: isCurrentWeek ? "hidden" : "visible" }}
+          >
+            今週に戻る
+          </button>
           <div ref={weekCardRef} style={weekCardStyle}>
             {/* 前の週 */}
             <button onClick={() => setWeekOffset(o => o - 1)} style={weekNavBtnStyle}>
