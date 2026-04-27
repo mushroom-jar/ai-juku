@@ -18,9 +18,9 @@ type ReviewRecord = {
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const SECTIONS: { key: Category; label: string; emoji: string; color: string; pillBg: string }[] = [
-  { key: "today",  label: "今日やること", emoji: "📚", color: "#C9A84C", pillBg: "rgba(201,168,76,0.25)" },
-  { key: "review", label: "復習",        emoji: "🔁", color: "#A78BFA", pillBg: "rgba(167,139,250,0.25)" },
-  { key: "other",  label: "あとで",      emoji: "🕐", color: "#94A3B8", pillBg: "rgba(148,163,184,0.18)" },
+  { key: "today",  label: "今日やること", emoji: "📚", color: "#3157B7", pillBg: "rgba(49,87,183,0.10)" },
+  { key: "review", label: "復習",        emoji: "🔁", color: "#D97706", pillBg: "rgba(217,119,6,0.10)" },
+  { key: "other",  label: "あとで",      emoji: "🕐", color: "#64748B", pillBg: "rgba(100,116,139,0.10)" },
 ];
 
 export default function TodoPage() {
@@ -105,7 +105,7 @@ export default function TodoPage() {
           {/* 日付ヘッダー */}
           <div style={dateHeaderStyle}>
             <div style={dayLabelStyle}>{WEEKDAYS[today.getDay()]}曜日</div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 13, color: "#94A3B8", display: "flex", alignItems: "center", gap: 4 }}>
               {today.getFullYear()}年{today.getMonth() + 1}月
               <ChevronRight size={14} color="rgba(255,255,255,0.4)" />
             </div>
@@ -117,15 +117,15 @@ export default function TodoPage() {
               const isToday = d.toDateString() === today.toDateString();
               return (
                 <div key={i} style={weekDayColStyle}>
-                  <div style={{ fontSize: 11, color: isToday ? "#fff" : "rgba(255,255,255,0.35)", fontWeight: 600, marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, color: isToday ? "#3157B7" : "#94A3B8", fontWeight: 600, marginBottom: 6 }}>
                     {WEEKDAYS[d.getDay()]}
                   </div>
                   <div style={{
                     width: 38, height: 38, borderRadius: 12,
-                    background: isToday ? "rgba(255,255,255,0.18)" : "transparent",
+                    background: isToday ? "#3157B7" : "transparent",
                     display: "grid", placeItems: "center",
                     fontSize: 17, fontWeight: isToday ? 800 : 500,
-                    color: isToday ? "#fff" : "rgba(255,255,255,0.35)",
+                    color: isToday ? "#fff" : "#94A3B8",
                   }}>
                     {d.getDate()}
                   </div>
@@ -138,7 +138,7 @@ export default function TodoPage() {
           {/* AI提案ボタン */}
           <button onClick={generateAI} disabled={aiLoading} style={aiButtonStyle}>
             <Sparkles size={15} color="#C9A84C" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#3157B7" }}>
               {aiLoading ? "AIが考えています..." : "AIにタスクを提案してもらう"}
             </span>
           </button>
@@ -213,7 +213,7 @@ export default function TodoPage() {
                         <div style={progressBarBgStyle}>
                           <div style={{ ...progressBarFillStyle, width: `${Math.round(done.length / secItems.length * 100)}%`, background: sec.color }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", paddingLeft: 4 }}>
+                        <div style={{ fontSize: 11, color: "#94A3B8", paddingLeft: 4 }}>
                           {done.length} / {secItems.length} 完了
                         </div>
                         {done.map(item => (
@@ -266,19 +266,19 @@ function ReviewRecordCard({ record }: { record: ReviewRecord }) {
 }
 
 // ── Styles ──
-const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#000" };
+const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#F8FAFC" };
 const innerStyle: CSSProperties = { maxWidth: 480, margin: "0 auto", padding: "20px 18px 120px", display: "grid", gap: 20 };
 
 const dateHeaderStyle: CSSProperties = { display: "flex", alignItems: "baseline", justifyContent: "space-between" };
-const dayLabelStyle: CSSProperties = { fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.04em" };
+const dayLabelStyle: CSSProperties = { fontSize: 36, fontWeight: 900, color: "#0F172A", letterSpacing: "-0.04em" };
 
 const weekRowStyle: CSSProperties = { display: "flex", justifyContent: "space-between" };
 const weekDayColStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 0 };
-const todayDotStyle: CSSProperties = { width: 5, height: 5, borderRadius: 999, background: "#fff", marginTop: 4 };
+const todayDotStyle: CSSProperties = { width: 5, height: 5, borderRadius: 999, background: "#3157B7", marginTop: 4 };
 
 const aiButtonStyle: CSSProperties = {
   display: "flex", alignItems: "center", gap: 8, padding: "12px 16px",
-  borderRadius: 14, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)",
+  borderRadius: 14, background: "#EFF6FF", border: "1px solid #BFDBFE",
   cursor: "pointer", width: "100%",
 };
 
@@ -288,22 +288,22 @@ const sectionHeaderStyle: CSSProperties = { display: "flex", alignItems: "center
 function pillBtnStyle(bg: string): CSSProperties {
   return { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, background: bg, border: "none", cursor: "pointer", fontFamily: "inherit" };
 }
-const plusBtnStyle: CSSProperties = { width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.08)", border: "none", cursor: "pointer", display: "grid", placeItems: "center" };
+const plusBtnStyle: CSSProperties = { width: 36, height: 36, borderRadius: 999, background: "#E2E8F0", border: "none", cursor: "pointer", display: "grid", placeItems: "center" };
 
-const addRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 16, background: "#1C1C1E" };
-const addInputStyle: CSSProperties = { flex: 1, border: "none", outline: "none", fontSize: 15, color: "#fff", background: "transparent", fontFamily: "inherit" };
+const addRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 16, background: "#fff", border: "1px solid #E2E8F0" };
+const addInputStyle: CSSProperties = { flex: 1, border: "none", outline: "none", fontSize: 15, color: "#0F172A", background: "transparent", fontFamily: "inherit" };
 const confirmBtnStyle: CSSProperties = { padding: "6px 14px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
 
-const emptyRowStyle: CSSProperties = { padding: "14px 16px", fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center" };
+const emptyRowStyle: CSSProperties = { padding: "14px 16px", fontSize: 13, color: "#CBD5E1", textAlign: "center" };
 
-const progressBarBgStyle: CSSProperties = { height: 3, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" };
+const progressBarBgStyle: CSSProperties = { height: 3, borderRadius: 999, background: "#E2E8F0", overflow: "hidden" };
 const progressBarFillStyle: CSSProperties = { height: "100%", borderRadius: 999, transition: "width 0.4s ease" };
 
 function taskCardStyle(done: boolean): CSSProperties {
-  return { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, background: "#1C1C1E", cursor: "pointer", opacity: done ? 0.6 : 1 };
+  return { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, background: "#fff", border: "1px solid #E2E8F0", cursor: "pointer", opacity: done ? 0.55 : 1 };
 }
-const taskIconStyle: CSSProperties = { width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.06)", display: "grid", placeItems: "center", fontSize: 18, flexShrink: 0 };
+const taskIconStyle: CSSProperties = { width: 36, height: 36, borderRadius: 10, background: "#F1F5F9", display: "grid", placeItems: "center", fontSize: 18, flexShrink: 0 };
 function circleStyle(done: boolean): CSSProperties {
-  return { width: 26, height: 26, borderRadius: 999, border: done ? "none" : "2px solid rgba(255,255,255,0.25)", background: done ? "rgba(255,255,255,0.3)" : "transparent", display: "grid", placeItems: "center", flexShrink: 0 };
+  return { width: 26, height: 26, borderRadius: 999, border: done ? "none" : "2px solid #CBD5E1", background: done ? "#3157B7" : "transparent", display: "grid", placeItems: "center", flexShrink: 0 };
 }
-const askStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, background: "rgba(167,139,250,0.2)", color: "#A78BFA", fontSize: 12, fontWeight: 700, textDecoration: "none", flexShrink: 0 };
+const askStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, background: "#FFF7ED", color: "#D97706", fontSize: 12, fontWeight: 700, textDecoration: "none", flexShrink: 0 };
