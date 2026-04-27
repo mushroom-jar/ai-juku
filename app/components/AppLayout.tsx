@@ -29,7 +29,7 @@ type Tab = {
 };
 
 const MOBILE_TABS: Tab[] = [
-  { href: "/todo",      label: "Todo",  Icon: CheckSquare,   tone: { color: "#3157B7", bg: "", border: "" } },
+  { href: "/todo",      label: "ホーム", Icon: CheckSquare,   tone: { color: "#3157B7", bg: "", border: "" } },
   { href: "/exercise",  label: "演習",  Icon: BookOpen,      tone: { color: "#0F766E", bg: "", border: "" } },
   { href: "/timer",     label: "タイマー", Icon: Timer,      tone: { color: "#7C3AED", bg: "", border: "" } },
   { href: "/my-sensei", label: "先生",  Icon: GraduationCap, tone: { color: "#EA580C", bg: "", border: "" } },
