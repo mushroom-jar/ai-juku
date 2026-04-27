@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppLayout from "@/app/components/AppLayout";
 import Link from "next/link";
-import { CheckCircle2, Circle, ChevronDown, ClipboardList, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
 
 type TodoItem = {
   id: string; title: string; category: "task" | "review";
@@ -28,13 +28,31 @@ export default function TodoPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const today = new Date();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const touchStartX = useRef<number | null>(null);
+
   const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay());
+  weekStart.setDate(today.getDate() - today.getDay() + weekOffset * 7);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     return d;
   });
+
+  const isCurrentWeek = weekOffset === 0;
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      setWeekOffset(o => o + (diff > 0 ? 1 : -1));
+    }
+    touchStartX.current = null;
+  }
 
   useEffect(() => {
     Promise.all([
@@ -128,20 +146,46 @@ export default function TodoPage() {
           </div>
 
           {/* 週カレンダー */}
-          <div style={weekCardStyle}>
+          <div
+            style={weekCardStyle}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* 前の週 */}
+            <button onClick={() => setWeekOffset(o => o - 1)} style={weekNavBtnStyle}>
+              <ChevronLeft size={16} color="#94A3B8" />
+            </button>
+
             {weekDays.map((d, i) => {
               const isToday = d.toDateString() === today.toDateString();
+              const isSelected = d.toDateString() === selectedDate.toDateString();
               return (
-                <div key={i} style={weekColStyle}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: isToday ? "#3157B7" : "#94A3B8" }}>
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(d)}
+                  style={weekColBtnStyle}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 600, color: isSelected ? "#3157B7" : "#94A3B8" }}>
                     {WEEKDAYS[d.getDay()]}
                   </span>
-                  <div style={dayCircleStyle(isToday)}>{d.getDate()}</div>
+                  <div style={dayCircleStyle(isSelected, isToday)}>{d.getDate()}</div>
                   {isToday && <div style={activeDotStyle} />}
-                </div>
+                </button>
               );
             })}
+
+            {/* 次の週 */}
+            <button onClick={() => setWeekOffset(o => o + 1)} style={weekNavBtnStyle}>
+              <ChevronRight size={16} color="#94A3B8" />
+            </button>
           </div>
+
+          {/* 今週に戻るボタン */}
+          {!isCurrentWeek && (
+            <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} style={backToTodayStyle}>
+              今週に戻る
+            </button>
+          )}
 
           {/* 進捗サマリー */}
           {totalTasks > 0 && (
@@ -351,21 +395,37 @@ const aiChipStyle: CSSProperties = {
 };
 
 const weekCardStyle: CSSProperties = {
-  background: "#fff", borderRadius: 20, padding: "14px 16px",
-  display: "flex", justifyContent: "space-between",
+  background: "#fff", borderRadius: 20, padding: "12px 4px",
+  display: "flex", alignItems: "center", justifyContent: "space-between",
   boxShadow: "0 2px 12px rgba(15,23,42,0.06)",
+  userSelect: "none",
 };
-const weekColStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 6 };
-function dayCircleStyle(isToday: boolean): CSSProperties {
+const weekNavBtnStyle: CSSProperties = {
+  width: 32, height: 32, border: "none", background: "transparent",
+  cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0,
+};
+const weekColBtnStyle: CSSProperties = {
+  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+  background: "transparent", border: "none", cursor: "pointer", padding: "0 2px",
+};
+function dayCircleStyle(isSelected: boolean, isToday: boolean): CSSProperties {
   return {
     width: 34, height: 34, borderRadius: 10,
-    background: isToday ? "#3157B7" : "transparent",
+    background: isSelected ? "#3157B7" : isToday ? "#EEF2FF" : "transparent",
     display: "grid", placeItems: "center",
-    fontSize: 15, fontWeight: isToday ? 800 : 500,
-    color: isToday ? "#fff" : "#475569",
+    fontSize: 15, fontWeight: isSelected ? 800 : 500,
+    color: isSelected ? "#fff" : isToday ? "#3157B7" : "#475569",
+    transition: "all 0.15s",
   };
 }
 const activeDotStyle: CSSProperties = { width: 4, height: 4, borderRadius: 999, background: "#3157B7" };
+const backToTodayStyle: CSSProperties = {
+  display: "block", margin: "0 auto",
+  padding: "6px 16px", borderRadius: 999,
+  border: "1px solid #BFDBFE", background: "#EFF6FF",
+  fontSize: 12, fontWeight: 700, color: "#3157B7",
+  cursor: "pointer", fontFamily: "inherit",
+};
 
 const progressCardStyle: CSSProperties = {
   background: "#fff", borderRadius: 20, padding: "16px 18px",
