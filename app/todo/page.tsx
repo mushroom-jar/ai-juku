@@ -204,7 +204,7 @@ function Section({ title, color, bg, items, onToggle, onDelete, activeInput, onO
   inputValue: string;
   onInputChange: (v: string) => void;
   onAdd: () => void;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   loading: boolean;
 }) {
   return (
@@ -224,7 +224,7 @@ function Section({ title, color, bg, items, onToggle, onDelete, activeInput, onO
         {activeInput && (
           <div style={inlineInputRowStyle}>
             <input
-              ref={inputRef as React.RefObject<HTMLInputElement> | undefined}
+              ref={inputRef}
               value={inputValue}
               onChange={e => onInputChange(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") onAdd(); if (e.key === "Escape") onInputChange(""); }}
@@ -258,7 +258,7 @@ function ReviewSection({ title, color, bg, todos, records, onToggle, onDelete, a
   inputValue: string;
   onInputChange: (v: string) => void;
   onAdd: () => void;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   loading: boolean;
 }) {
   const total = todos.length + records.length;
@@ -279,7 +279,7 @@ function ReviewSection({ title, color, bg, todos, records, onToggle, onDelete, a
         {activeInput && (
           <div style={inlineInputRowStyle}>
             <input
-              ref={inputRef as React.RefObject<HTMLInputElement> | undefined}
+              ref={inputRef}
               value={inputValue}
               onChange={e => onInputChange(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") onAdd(); }}
