@@ -41,18 +41,39 @@ export default function TodoPage() {
   });
 
   const isCurrentWeek = weekOffset === 0;
+  const weekCardRef = useRef<HTMLDivElement | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-  }
-  function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      setWeekOffset(o => o + (diff > 0 ? 1 : -1));
-    }
-    touchStartX.current = null;
-  }
+  // passive:false で縦スクロールを抑制しながら横スワイプを検知
+  useEffect(() => {
+    const el = weekCardRef.current;
+    if (!el) return;
+    const onStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (touchStartX.current === null || touchStartY.current === null) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (dx > dy) e.preventDefault(); // 横スワイプのみ縦スクロールを止める
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return;
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 48) setWeekOffset(o => o + (diff > 0 ? 1 : -1));
+      touchStartX.current = null;
+      touchStartY.current = null;
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -146,11 +167,12 @@ export default function TodoPage() {
           </div>
 
           {/* 週カレンダー */}
-          <div
-            style={weekCardStyle}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
+          {!isCurrentWeek && (
+            <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} style={backToTodayStyle}>
+              今週に戻る
+            </button>
+          )}
+          <div ref={weekCardRef} style={weekCardStyle}>
             {/* 前の週 */}
             <button onClick={() => setWeekOffset(o => o - 1)} style={weekNavBtnStyle}>
               <ChevronLeft size={16} color="#94A3B8" />
@@ -180,12 +202,6 @@ export default function TodoPage() {
             </button>
           </div>
 
-          {/* 今週に戻るボタン */}
-          {!isCurrentWeek && (
-            <button onClick={() => { setWeekOffset(0); setSelectedDate(today); }} style={backToTodayStyle}>
-              今週に戻る
-            </button>
-          )}
 
           {/* 進捗サマリー */}
           {totalTasks > 0 && (
