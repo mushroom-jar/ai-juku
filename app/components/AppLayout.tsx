@@ -6,22 +6,17 @@ import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  Activity,
-  BadgeCheck,
   BookOpen,
-  CalendarDays,
   GraduationCap,
-  Home,
-  History,
-  Library,
-  LineChart,
-  Map,
-  RotateCcw,
-  Settings,
   Settings2,
-  Trophy,
+  Timer,
+  CheckSquare,
   User,
   Users,
+  BadgeCheck,
+  Trophy,
+  History,
+  Settings,
   X,
 } from "lucide-react";
 import XpBar from "./XpBar";
@@ -33,56 +28,21 @@ type Tab = {
   tone: { color: string; bg: string; border: string };
 };
 
-type Section = { title: string | null; tabs: Tab[] };
-
-const TONE = { color: "#1E293B", bg: "rgba(30,41,59,0.07)", border: "rgba(30,41,59,0.1)" };
-
-const NAV_SECTIONS: Section[] = [
-  {
-    title: null,
-    tabs: [
-      { href: "/schedule", label: "ホーム", Icon: Home, tone: TONE },
-      { href: "/shelf", label: "本棚", Icon: Library, tone: TONE },
-    ],
-  },
-  {
-    title: "学習する",
-    tabs: [
-      { href: "/progress", label: "課題・勉強履歴", Icon: LineChart, tone: TONE },
-      { href: "/timeline", label: "タイムライン", Icon: Activity, tone: TONE },
-      { href: "/events", label: "カレンダー", Icon: CalendarDays, tone: TONE },
-    ],
-  },
-  {
-    title: "整える",
-    tabs: [
-      { href: "/route", label: "学習ルート", Icon: Map, tone: TONE },
-      { href: "/reflection", label: "振り返る", Icon: History, tone: TONE },
-      { href: "/review", label: "復習リスト", Icon: RotateCcw, tone: TONE },
-      { href: "/books", label: "教材", Icon: BookOpen, tone: TONE },
-    ],
-  },
-  {
-    title: null,
-    tabs: [{ href: "/settings", label: "設定", Icon: Settings, tone: TONE }],
-  },
-];
-
 const MOBILE_TABS: Tab[] = [
-  { href: "/schedule",  label: "ホーム",  Icon: Home,          tone: { color: "#3157B7", bg: "", border: "" } },
-  { href: "/shelf",     label: "本棚",    Icon: Library,       tone: { color: "#0F766E", bg: "", border: "" } },
-  { href: "/events",    label: "予定",    Icon: CalendarDays,  tone: { color: "#7C3AED", bg: "", border: "" } },
-  { href: "/my-sensei", label: "先生",    Icon: GraduationCap, tone: { color: "#3157B7", bg: "", border: "" } },
+  { href: "/todo",      label: "Todo",  Icon: CheckSquare,   tone: { color: "#3157B7", bg: "", border: "" } },
+  { href: "/exercise",  label: "演習",  Icon: BookOpen,      tone: { color: "#0F766E", bg: "", border: "" } },
+  { href: "/timer",     label: "タイマー", Icon: Timer,      tone: { color: "#7C3AED", bg: "", border: "" } },
+  { href: "/my-sensei", label: "先生",  Icon: GraduationCap, tone: { color: "#EA580C", bg: "", border: "" } },
 ];
 
 // 自分シートの項目
 const ME_ITEMS = [
-  { href: "/me",         label: "プロフィール",   Icon: User,       color: "#3157B7", bg: "#EFF6FF" },
-  { href: "/level",      label: "レベル",          Icon: Trophy,     color: "#D97706", bg: "#FFFBEB" },
-  { href: "/badges",     label: "バッジ",          Icon: BadgeCheck, color: "#059669", bg: "#F0FDF4" },
-  { href: "/ranking",    label: "ランキング",       Icon: Trophy,     color: "#7C3AED", bg: "#F5F3FF" },
-  { href: "/friends",    label: "フレンド",         Icon: Users,      color: "#0F766E", bg: "#F0FDFA" },
-  { href: "/settings",   label: "設定",            Icon: Settings2,  color: "#475569", bg: "#F8FAFC" },
+  { href: "/me",        label: "プロフィール", Icon: User,       color: "#3157B7", bg: "#EFF6FF" },
+  { href: "/reflection",label: "振り返り",     Icon: History,    color: "#D97706", bg: "#FFFBEB" },
+  { href: "/badges",    label: "バッジ",       Icon: BadgeCheck, color: "#059669", bg: "#F0FDF4" },
+  { href: "/ranking",   label: "ランキング",   Icon: Trophy,     color: "#7C3AED", bg: "#F5F3FF" },
+  { href: "/friends",   label: "フレンド",     Icon: Users,      color: "#0F766E", bg: "#F0FDFA" },
+  { href: "/settings",  label: "設定",         Icon: Settings2,  color: "#475569", bg: "#F8FAFC" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -91,7 +51,6 @@ function isActive(pathname: string, href: string) {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const senseiActive = pathname === "/my-sensei";
   const [meOpen, setMeOpen] = useState(false);
 
   return (
@@ -105,36 +64,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="sidebar-brand-title">永愛塾</div>
           </div>
         </div>
-
         <nav className="sidebar-nav">
-          <Link href="/my-sensei" className={`sidebar-sensei ${senseiActive ? "is-active" : ""}`}>
-            <span className="sidebar-sensei-icon">
-              <GraduationCap size={18} strokeWidth={2.2} />
-            </span>
-            <span className="sidebar-sensei-copy">
-              <span className="sidebar-sensei-title">My先生</span>
-            </span>
-          </Link>
-
-          {NAV_SECTIONS.map((section, i) => (
-            <div key={section.title ?? `section-${i}`} className="sidebar-section">
-              {i > 0 && <div className="sidebar-divider" />}
-              {section.title ? <div className="sidebar-section-title">{section.title}</div> : null}
-              {section.tabs.map(({ href, label, Icon, tone }) => {
-                const active = isActive(pathname, href);
-                return (
-                  <Link key={href} href={href} className={`sidebar-item ${active ? "is-active" : ""}`}
-                    style={{ "--item-accent": tone.color, "--item-accent-bg": tone.bg, "--item-accent-border": tone.border } as CSSProperties}>
-                    <span className="sidebar-item-icon"><Icon size={18} strokeWidth={active ? 2.4 : 2.1} /></span>
-                    <span className="sidebar-item-copy"><span className="sidebar-item-label">{label}</span></span>
-                    {active ? <span className="sidebar-item-dot" /> : null}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          {MOBILE_TABS.map(({ href, label, Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link key={href} href={href} className={`sidebar-item ${active ? "is-active" : ""}`}>
+                <span className="sidebar-item-icon"><Icon size={18} strokeWidth={active ? 2.4 : 2.1} /></span>
+                <span className="sidebar-item-copy"><span className="sidebar-item-label">{label}</span></span>
+              </Link>
+            );
+          })}
         </nav>
-
         <div className="sidebar-footer">© 2026 永愛塾</div>
       </aside>
 
