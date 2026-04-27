@@ -3,37 +3,44 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppLayout from "@/app/components/AppLayout";
 import Link from "next/link";
-import {
-  Check, Circle, Plus, Sparkles, Trash2, GraduationCap, RefreshCw, BookOpen,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, GraduationCap, Plus, Sparkles, BookOpen } from "lucide-react";
 
 type Category = "today" | "review" | "other";
 type TodoItem = {
-  id: string;
-  title: string;
-  category: Category;
-  status: "pending" | "done";
-  source: string;
-  created_at: string;
+  id: string; title: string; category: Category;
+  status: "pending" | "done"; source: string; created_at: string;
 };
 type ReviewRecord = {
-  id: string;
-  material: string | null;
-  range: string | null;
-  subject: string | null;
-  date: string;
-  book_id: string | null;
+  id: string; material: string | null; range: string | null;
+  subject: string | null; date: string; book_id: string | null;
 };
+
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+const SECTIONS: { key: Category; label: string; emoji: string; color: string; pillBg: string }[] = [
+  { key: "today",  label: "今日やること", emoji: "📚", color: "#C9A84C", pillBg: "rgba(201,168,76,0.25)" },
+  { key: "review", label: "復習",        emoji: "🔁", color: "#A78BFA", pillBg: "rgba(167,139,250,0.25)" },
+  { key: "other",  label: "あとで",      emoji: "🕐", color: "#94A3B8", pillBg: "rgba(148,163,184,0.18)" },
+];
 
 export default function TodoPage() {
   const [items, setItems] = useState<TodoItem[]>([]);
   const [reviewRecords, setReviewRecords] = useState<ReviewRecord[]>([]);
-  const [input, setInput] = useState("");
-  const [addTarget, setAddTarget] = useState<Category>("today");
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
-  const [activeInput, setActiveInput] = useState<Category | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [collapsed, setCollapsed] = useState<Record<Category, boolean>>({} as Record<Category, boolean>);
+  const [addingTo, setAddingTo] = useState<Category | null>(null);
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
+  });
 
   useEffect(() => {
     Promise.all([
@@ -45,15 +52,15 @@ export default function TodoPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  async function addTodo(category: Category) {
+  async function addTodo(cat: Category) {
     const title = input.trim();
     if (!title) return;
     setInput("");
-    setActiveInput(null);
+    setAddingTo(null);
     const res = await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, category }),
+      body: JSON.stringify({ title, category: cat }),
     });
     const d = await res.json();
     if (d.todo) setItems(prev => [d.todo, ...prev]);
@@ -71,305 +78,232 @@ export default function TodoPage() {
     });
   }
 
-  async function deleteTodo(id: string) {
-    setItems(prev => prev.filter(i => i.id !== id));
-    await fetch(`/api/todos/${id}`, { method: "DELETE" });
-  }
-
   async function generateAI() {
     setAiLoading(true);
     try {
       const res = await fetch("/api/todos/ai-suggest", { method: "POST" });
       const d = await res.json();
       if (d.todos) setItems(prev => [...d.todos, ...prev]);
-    } finally {
-      setAiLoading(false);
-    }
+    } finally { setAiLoading(false); }
   }
 
-  const todayPending  = items.filter(i => i.category === "today"  && i.status === "pending");
-  const reviewPending = items.filter(i => i.category === "review" && i.status === "pending");
-  const otherPending  = items.filter(i => i.category === "other"  && i.status === "pending");
-  const done          = items.filter(i => i.status === "done");
+  function toggleCollapse(cat: Category) {
+    setCollapsed(prev => ({ ...prev, [cat]: !prev[cat] }));
+  }
+
+  function openAdd(cat: Category) {
+    setAddingTo(cat);
+    setInput("");
+    setTimeout(() => inputRef.current?.focus(), 60);
+  }
 
   return (
     <AppLayout>
       <div style={pageStyle}>
         <div style={innerStyle}>
 
-          {/* ヘッダー */}
-          <div style={headerStyle}>
-            <h1 style={titleStyle}>Todo</h1>
-            <Link href="/my-sensei?mode=todo" style={senseiLinkStyle}>
-              <GraduationCap size={15} />先生に相談
-            </Link>
+          {/* 日付ヘッダー */}
+          <div style={dateHeaderStyle}>
+            <div style={dayLabelStyle}>{WEEKDAYS[today.getDay()]}曜日</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: 4 }}>
+              {today.getFullYear()}年{today.getMonth() + 1}月
+              <ChevronRight size={14} color="rgba(255,255,255,0.4)" />
+            </div>
           </div>
 
-          {/* AI提案 */}
-          <button onClick={generateAI} disabled={aiLoading} style={aiBannerStyle}>
-            <div style={aiIconStyle}>
-              <Sparkles size={17} color="#3157B7" />
-            </div>
-            <div style={{ flex: 1, textAlign: "left" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>
-                {aiLoading ? "AIが考えています..." : "今日のタスクをAIに提案してもらう"}
-              </div>
-              <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
-                目標と演習記録から自動でTodoを追加
-              </div>
-            </div>
-            {aiLoading
-              ? <RefreshCw size={16} color="#94A3B8" style={{ animation: "spin 1s linear infinite" }} />
-              : <Sparkles size={16} color="#BFDBFE" />}
+          {/* 週カレンダー */}
+          <div style={weekRowStyle}>
+            {weekDays.map((d, i) => {
+              const isToday = d.toDateString() === today.toDateString();
+              return (
+                <div key={i} style={weekDayColStyle}>
+                  <div style={{ fontSize: 11, color: isToday ? "#fff" : "rgba(255,255,255,0.35)", fontWeight: 600, marginBottom: 6 }}>
+                    {WEEKDAYS[d.getDay()]}
+                  </div>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 12,
+                    background: isToday ? "rgba(255,255,255,0.18)" : "transparent",
+                    display: "grid", placeItems: "center",
+                    fontSize: 17, fontWeight: isToday ? 800 : 500,
+                    color: isToday ? "#fff" : "rgba(255,255,255,0.35)",
+                  }}>
+                    {d.getDate()}
+                  </div>
+                  {isToday && <div style={todayDotStyle} />}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* AI提案ボタン */}
+          <button onClick={generateAI} disabled={aiLoading} style={aiButtonStyle}>
+            <Sparkles size={15} color="#C9A84C" />
+            <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>
+              {aiLoading ? "AIが考えています..." : "AIにタスクを提案してもらう"}
+            </span>
           </button>
 
-          {/* 今日やること */}
-          <Section
-            title="今日やること"
-            color="#3157B7"
-            bg="#EFF6FF"
-            items={todayPending}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            activeInput={activeInput === "today"}
-            onOpenInput={() => { setActiveInput("today"); setAddTarget("today"); setTimeout(() => inputRef.current?.focus(), 50); }}
-            inputValue={activeInput === "today" ? input : ""}
-            onInputChange={setInput}
-            onAdd={() => addTodo("today")}
-            inputRef={activeInput === "today" ? inputRef : undefined}
-            loading={loading}
-          />
+          {/* セクション */}
+          {SECTIONS.map(sec => {
+            const secItems = items.filter(i => i.category === sec.key);
+            const pending = secItems.filter(i => i.status === "pending");
+            const done = secItems.filter(i => i.status === "done");
+            const total = sec.key === "review" ? pending.length + reviewRecords.length : pending.length;
+            const isCollapsed = !!collapsed[sec.key];
 
-          {/* 復習リスト */}
-          <ReviewSection
-            title="復習リスト"
-            color="#D97706"
-            bg="#FFFBEB"
-            todos={reviewPending}
-            records={reviewRecords}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            activeInput={activeInput === "review"}
-            onOpenInput={() => { setActiveInput("review"); setAddTarget("review"); setTimeout(() => inputRef.current?.focus(), 50); }}
-            inputValue={activeInput === "review" ? input : ""}
-            onInputChange={setInput}
-            onAdd={() => addTodo("review")}
-            inputRef={activeInput === "review" ? inputRef : undefined}
-            loading={loading}
-          />
+            return (
+              <div key={sec.key} style={sectionWrapStyle}>
+                {/* セクションヘッダー */}
+                <div style={sectionHeaderStyle}>
+                  <button onClick={() => toggleCollapse(sec.key)} style={pillBtnStyle(sec.pillBg)}>
+                    <span style={{ fontSize: 13 }}>{sec.emoji}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: sec.color }}>
+                      {sec.label}（{total}）
+                    </span>
+                    <ChevronDown size={14} color={sec.color}
+                      style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.2s" }} />
+                  </button>
+                  <button onClick={() => openAdd(sec.key)} style={plusBtnStyle}>
+                    <Plus size={18} color="rgba(255,255,255,0.5)" />
+                  </button>
+                </div>
 
-          {/* あとで */}
-          <Section
-            title="あとで"
-            color="#64748B"
-            bg="#F8FAFC"
-            items={otherPending}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            activeInput={activeInput === "other"}
-            onOpenInput={() => { setActiveInput("other"); setAddTarget("other"); setTimeout(() => inputRef.current?.focus(), 50); }}
-            inputValue={activeInput === "other" ? input : ""}
-            onInputChange={setInput}
-            onAdd={() => addTodo("other")}
-            inputRef={activeInput === "other" ? inputRef : undefined}
-            loading={loading}
-          />
+                {/* タスクリスト */}
+                {!isCollapsed && (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {/* インライン追加 */}
+                    {addingTo === sec.key && (
+                      <div style={addRowStyle}>
+                        <span style={{ fontSize: 18 }}>{sec.emoji}</span>
+                        <input
+                          ref={inputRef}
+                          value={input}
+                          onChange={e => setInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") addTodo(sec.key); if (e.key === "Escape") setAddingTo(null); }}
+                          placeholder="タスクを入力..."
+                          style={addInputStyle}
+                          autoFocus
+                        />
+                        <button onClick={() => addTodo(sec.key)} disabled={!input.trim()} style={{ ...confirmBtnStyle, background: sec.pillBg, color: sec.color }}>
+                          追加
+                        </button>
+                      </div>
+                    )}
 
-          {/* 完了済み */}
-          {done.length > 0 && (
-            <div>
-              <div style={doneLabelStyle}>完了済み（{done.length}）</div>
-              <div style={{ ...listCardStyle, opacity: 0.65 }}>
-                {done.map(item => (
-                  <TodoRow key={item.id} item={item} onToggle={toggleTodo} onDelete={deleteTodo} />
-                ))}
+                    {/* 未完了 */}
+                    {loading ? (
+                      <TaskCard emoji="⏳" title="読み込み中..." done={false} onToggle={() => {}} />
+                    ) : (
+                      <>
+                        {pending.map(item => (
+                          <TaskCard key={item.id} emoji={sec.emoji} title={item.title} done={false} onToggle={() => toggleTodo(item.id)} />
+                        ))}
+                        {sec.key === "review" && reviewRecords.map(rec => (
+                          <ReviewRecordCard key={rec.id} record={rec} />
+                        ))}
+                        {pending.length === 0 && (sec.key !== "review" || reviewRecords.length === 0) && addingTo !== sec.key && (
+                          <div style={emptyRowStyle}>タスクなし</div>
+                        )}
+                      </>
+                    )}
+
+                    {/* 完了済み */}
+                    {done.length > 0 && (
+                      <>
+                        <div style={progressBarBgStyle}>
+                          <div style={{ ...progressBarFillStyle, width: `${Math.round(done.length / secItems.length * 100)}%`, background: sec.color }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", paddingLeft: 4 }}>
+                          {done.length} / {secItems.length} 完了
+                        </div>
+                        {done.map(item => (
+                          <TaskCard key={item.id} emoji={sec.emoji} title={item.title} done={true} onToggle={() => toggleTodo(item.id)} />
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
+            );
+          })}
         </div>
       </div>
     </AppLayout>
   );
 }
 
-// ─── セクション ────────────────────────────────────────────────
-function Section({ title, color, bg, items, onToggle, onDelete, activeInput, onOpenInput, inputValue, onInputChange, onAdd, inputRef, loading }: {
-  title: string; color: string; bg: string;
-  items: TodoItem[];
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  activeInput: boolean;
-  onOpenInput: () => void;
-  inputValue: string;
-  onInputChange: (v: string) => void;
-  onAdd: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
-  loading: boolean;
+function TaskCard({ emoji, title, done, onToggle }: {
+  emoji: string; title: string; done: boolean; onToggle: () => void;
 }) {
   return (
-    <div style={sectionWrapStyle}>
-      <div style={sectionHeaderStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 999, background: color }} />
-          <span style={{ fontSize: 15, fontWeight: 800, color: "#0F172A" }}>{title}</span>
-          {items.length > 0 && <span style={{ ...countBadgeStyle, background: bg, color }}>{items.length}</span>}
-        </div>
-        <button onClick={onOpenInput} style={{ ...addRowBtnStyle, color }}>
-          <Plus size={15} /> 追加
-        </button>
+    <div style={taskCardStyle(done)} onClick={onToggle}>
+      <div style={taskIconStyle}>{emoji}</div>
+      <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: done ? "rgba(255,255,255,0.35)" : "#fff", textDecoration: done ? "line-through" : "none" }}>
+        {title}
       </div>
-
-      <div style={listCardStyle}>
-        {activeInput && (
-          <div style={inlineInputRowStyle}>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => onInputChange(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") onAdd(); if (e.key === "Escape") onInputChange(""); }}
-              placeholder="タスクを入力..."
-              style={inlineInputStyle}
-              autoFocus
-            />
-            <button onClick={onAdd} disabled={!inputValue.trim()} style={{ ...inlineAddBtnStyle, background: color }}>追加</button>
-          </div>
-        )}
-        {loading ? (
-          <div style={emptyStyle}>読み込み中...</div>
-        ) : items.length === 0 && !activeInput ? (
-          <div style={emptyStyle}>タスクなし</div>
-        ) : (
-          items.map(item => <TodoRow key={item.id} item={item} onToggle={onToggle} onDelete={onDelete} />)
-        )}
+      <div style={circleStyle(done)}>
+        {done && <Check size={14} color="#fff" strokeWidth={3} />}
       </div>
     </div>
   );
 }
 
-function ReviewSection({ title, color, bg, todos, records, onToggle, onDelete, activeInput, onOpenInput, inputValue, onInputChange, onAdd, inputRef, loading }: {
-  title: string; color: string; bg: string;
-  todos: TodoItem[];
-  records: ReviewRecord[];
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  activeInput: boolean;
-  onOpenInput: () => void;
-  inputValue: string;
-  onInputChange: (v: string) => void;
-  onAdd: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
-  loading: boolean;
-}) {
-  const total = todos.length + records.length;
+function ReviewRecordCard({ record }: { record: ReviewRecord }) {
   return (
-    <div style={sectionWrapStyle}>
-      <div style={sectionHeaderStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 999, background: color }} />
-          <span style={{ fontSize: 15, fontWeight: 800, color: "#0F172A" }}>{title}</span>
-          {total > 0 && <span style={{ ...countBadgeStyle, background: bg, color }}>{total}</span>}
+    <div style={taskCardStyle(false)}>
+      <div style={taskIconStyle}><BookOpen size={18} color="#A78BFA" /></div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+          {record.material || "教材"}{record.range ? `　${record.range}` : ""}
         </div>
-        <button onClick={onOpenInput} style={{ ...addRowBtnStyle, color }}>
-          <Plus size={15} /> 追加
-        </button>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{record.date} の演習</div>
       </div>
-
-      <div style={listCardStyle}>
-        {activeInput && (
-          <div style={inlineInputRowStyle}>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => onInputChange(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") onAdd(); }}
-              placeholder="復習内容を入力..."
-              style={inlineInputStyle}
-              autoFocus
-            />
-            <button onClick={onAdd} disabled={!inputValue.trim()} style={{ ...inlineAddBtnStyle, background: color }}>追加</button>
-          </div>
-        )}
-
-        {loading ? (
-          <div style={emptyStyle}>読み込み中...</div>
-        ) : (
-          <>
-            {todos.map(item => <TodoRow key={item.id} item={item} onToggle={onToggle} onDelete={onDelete} />)}
-            {records.map(rec => (
-              <div key={rec.id} style={reviewRecordRowStyle}>
-                <BookOpen size={16} color="#D97706" style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0F172A" }}>
-                    {rec.material || "教材"}{rec.range ? `　${rec.range}` : ""}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>{rec.date} の演習</div>
-                </div>
-                <Link href={`/my-sensei?exercise_id=${rec.id}`} style={askSenseiStyle}>
-                  <GraduationCap size={13} /> 聞く
-                </Link>
-              </div>
-            ))}
-            {todos.length === 0 && records.length === 0 && !activeInput && (
-              <div style={emptyStyle}>復習はありません</div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TodoRow({ item, onToggle, onDelete }: {
-  item: TodoItem; onToggle: (id: string) => void; onDelete: (id: string) => void;
-}) {
-  const done = item.status === "done";
-  return (
-    <div style={rowStyle(done)}>
-      <button onClick={() => onToggle(item.id)} style={checkStyle(done)}>
-        {done ? <Check size={20} strokeWidth={2.5} /> : <Circle size={20} strokeWidth={1.8} />}
-      </button>
-      <div style={{ flex: 1, fontSize: 15, fontWeight: 500, color: done ? "#94A3B8" : "#0F172A", textDecoration: done ? "line-through" : "none", lineHeight: 1.4 }}>
-        {item.title}
-      </div>
-      <button onClick={() => onDelete(item.id)} style={deleteStyle}>
-        <Trash2 size={15} />
-      </button>
+      <Link href={`/my-sensei?exercise_id=${record.id}`} onClick={e => e.stopPropagation()} style={askStyle}>
+        <GraduationCap size={13} /> 聞く
+      </Link>
     </div>
   );
 }
 
 // ── Styles ──
-const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#F8FAFC" };
-const innerStyle: CSSProperties = { maxWidth: 640, margin: "0 auto", padding: "24px 18px 120px", display: "grid", gap: 20 };
-const headerStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between" };
-const titleStyle: CSSProperties = { margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: "-0.04em", color: "#0F172A" };
-const senseiLinkStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 999, background: "#FFF7ED", color: "#EA580C", fontSize: 13, fontWeight: 700, textDecoration: "none" };
+const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#000" };
+const innerStyle: CSSProperties = { maxWidth: 480, margin: "0 auto", padding: "20px 18px 120px", display: "grid", gap: 20 };
 
-const aiBannerStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 18, background: "#F0F7FF", border: "1.5px solid #C7DEFF", cursor: "pointer", width: "100%" };
-const aiIconStyle: CSSProperties = { width: 36, height: 36, borderRadius: 10, background: "#DBEAFE", display: "grid", placeItems: "center", flexShrink: 0 };
+const dateHeaderStyle: CSSProperties = { display: "flex", alignItems: "baseline", justifyContent: "space-between" };
+const dayLabelStyle: CSSProperties = { fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.04em" };
+
+const weekRowStyle: CSSProperties = { display: "flex", justifyContent: "space-between" };
+const weekDayColStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 0 };
+const todayDotStyle: CSSProperties = { width: 5, height: 5, borderRadius: 999, background: "#fff", marginTop: 4 };
+
+const aiButtonStyle: CSSProperties = {
+  display: "flex", alignItems: "center", gap: 8, padding: "12px 16px",
+  borderRadius: 14, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)",
+  cursor: "pointer", width: "100%",
+};
 
 const sectionWrapStyle: CSSProperties = { display: "grid", gap: 10 };
 const sectionHeaderStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between" };
-const countBadgeStyle: CSSProperties = { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 999 };
-const addRowBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: "4px 8px", fontFamily: "inherit" };
 
-const listCardStyle: CSSProperties = { background: "#fff", borderRadius: 20, border: "1px solid #E2E8F0", overflow: "hidden" };
-const emptyStyle: CSSProperties = { padding: "20px 0", textAlign: "center", fontSize: 13, color: "#CBD5E1" };
-
-const inlineInputRowStyle: CSSProperties = { display: "flex", gap: 8, padding: "12px 14px", borderBottom: "1px solid #F1F5F9" };
-const inlineInputStyle: CSSProperties = { flex: 1, border: "none", outline: "none", fontSize: 15, color: "#0F172A", background: "transparent", fontFamily: "inherit" };
-const inlineAddBtnStyle: CSSProperties = { padding: "7px 14px", borderRadius: 10, border: "none", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" };
-
-const doneLabelStyle: CSSProperties = { fontSize: 12, fontWeight: 700, color: "#CBD5E1", marginBottom: 8, paddingLeft: 4 };
-
-const reviewRecordRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid #F1F5F9" };
-const askSenseiStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, background: "#FFF7ED", color: "#EA580C", fontSize: 12, fontWeight: 700, textDecoration: "none", flexShrink: 0 };
-
-function rowStyle(done: boolean): CSSProperties {
-  return { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid #F1F5F9", opacity: done ? 0.7 : 1 };
+function pillBtnStyle(bg: string): CSSProperties {
+  return { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, background: bg, border: "none", cursor: "pointer", fontFamily: "inherit" };
 }
-function checkStyle(done: boolean): CSSProperties {
-  return { border: "none", background: "transparent", padding: 0, cursor: "pointer", color: done ? "#16A34A" : "#CBD5E1", flexShrink: 0, display: "flex" };
+const plusBtnStyle: CSSProperties = { width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.08)", border: "none", cursor: "pointer", display: "grid", placeItems: "center" };
+
+const addRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 16, background: "#1C1C1E" };
+const addInputStyle: CSSProperties = { flex: 1, border: "none", outline: "none", fontSize: 15, color: "#fff", background: "transparent", fontFamily: "inherit" };
+const confirmBtnStyle: CSSProperties = { padding: "6px 14px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+
+const emptyRowStyle: CSSProperties = { padding: "14px 16px", fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center" };
+
+const progressBarBgStyle: CSSProperties = { height: 3, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" };
+const progressBarFillStyle: CSSProperties = { height: "100%", borderRadius: 999, transition: "width 0.4s ease" };
+
+function taskCardStyle(done: boolean): CSSProperties {
+  return { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, background: "#1C1C1E", cursor: "pointer", opacity: done ? 0.6 : 1 };
 }
-const deleteStyle: CSSProperties = { border: "none", background: "transparent", cursor: "pointer", color: "#E2E8F0", padding: 4, display: "flex", flexShrink: 0 };
+const taskIconStyle: CSSProperties = { width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.06)", display: "grid", placeItems: "center", fontSize: 18, flexShrink: 0 };
+function circleStyle(done: boolean): CSSProperties {
+  return { width: 26, height: 26, borderRadius: 999, border: done ? "none" : "2px solid rgba(255,255,255,0.25)", background: done ? "rgba(255,255,255,0.3)" : "transparent", display: "grid", placeItems: "center", flexShrink: 0 };
+}
+const askStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, background: "rgba(167,139,250,0.2)", color: "#A78BFA", fontSize: 12, fontWeight: 700, textDecoration: "none", flexShrink: 0 };
