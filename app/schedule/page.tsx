@@ -602,52 +602,52 @@ export default function SchedulePage() {
 // ── サブコンポーネント ─────────────────────────────────────────
 function StatusPill({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <div style={{ flex: 1, borderRadius: 16, background: "#fff", border: "1px solid #E8E8E4", padding: "10px 8px", display: "grid", placeItems: "center", gap: 3 }}>
+    <div style={{ flex: 1, borderRadius: 18, background: "#fff", border: "1px solid #E8E8E4", padding: "14px 8px", display: "grid", placeItems: "center", gap: 5 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{icon}</div>
-      <div style={{ fontSize: 16, fontWeight: 900, color: "#0F172A", lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8" }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 900, color: "#0F172A", lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8" }}>{label}</div>
     </div>
   );
 }
 function MiniMetric({ label, value, note }: { label: string; value: string | number; note: string }) {
   return (
-    <div style={{ borderRadius: 14, padding: 12, background: "#FAFAFA", border: "1px solid #E8E8E4" }}>
-      <div style={{ fontSize: 11, color: "#64748B" }}>{label}</div>
-      <div style={{ marginTop: 3, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>{value}</div>
-      <div style={{ marginTop: 2, fontSize: 10, color: "#94A3B8" }}>{note}</div>
+    <div style={{ borderRadius: 16, padding: 16, background: "#FAFAFA", border: "1px solid #E8E8E4" }}>
+      <div style={{ fontSize: 12, color: "#64748B" }}>{label}</div>
+      <div style={{ marginTop: 4, fontSize: 24, fontWeight: 800, color: "#0F172A" }}>{value}</div>
+      <div style={{ marginTop: 3, fontSize: 11, color: "#94A3B8" }}>{note}</div>
     </div>
   );
 }
 
 // ── スタイル ─────────────────────────────────────────────────────
 const pageStyle: CSSProperties = { minHeight: "100dvh", background: "#F8FAFC" };
-const mainStyle: CSSProperties = { maxWidth: 720, margin: "0 auto", padding: "16px 14px 100px", display: "grid", gap: 12 };
-const spinnerStyle: CSSProperties = { width: 32, height: 32, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#2563EB", animation: "spin 0.9s linear infinite" };
-const interviewCtaStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 18, background: "linear-gradient(135deg, #EFF6FF, #E8F0FE)", border: "1px solid #BFDBFE" };
-const interviewCtaBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 12, background: "#3157B7", color: "#fff", fontSize: 12, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 };
-const cardStyle: CSSProperties = { background: "#fff", border: "1px solid #E8E8E4", borderRadius: 20, padding: "16px 16px" };
-const sectionTitleStyle: CSSProperties = { margin: 0, fontSize: 15, fontWeight: 800, color: "#0F172A" };
+const mainStyle: CSSProperties = { maxWidth: 720, margin: "0 auto", padding: "20px 18px 120px", display: "grid", gap: 16 };
+const spinnerStyle: CSSProperties = { width: 36, height: 36, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#2563EB", animation: "spin 0.9s linear infinite" };
+const interviewCtaStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14, padding: "18px 20px", borderRadius: 20, background: "linear-gradient(135deg, #EFF6FF, #E8F0FE)", border: "1px solid #BFDBFE" };
+const interviewCtaBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "11px 18px", borderRadius: 14, background: "#3157B7", color: "#fff", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 };
+const cardStyle: CSSProperties = { background: "#fff", border: "1px solid #E8E8E4", borderRadius: 22, padding: "20px 18px" };
+const sectionTitleStyle: CSSProperties = { margin: 0, fontSize: 16, fontWeight: 800, color: "#0F172A" };
 
 // Hero
-const heroCardStyle: CSSProperties = { background: "linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%)", borderRadius: 20, padding: "18px 20px", display: "grid", gap: 10 };
+const heroCardStyle: CSSProperties = { background: "linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%)", borderRadius: 22, padding: "22px 22px", display: "grid", gap: 12 };
 const countdownRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 6 };
-const greetingStyle: CSSProperties = { fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)", lineHeight: 1.6, fontStyle: "italic" };
+const greetingStyle: CSSProperties = { fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.88)", lineHeight: 1.7, fontStyle: "italic" };
 
 // Timer banner
-const timerBannerStyle: CSSProperties = { background: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" };
-const timerInputStyle: CSSProperties = { flex: 1, minWidth: 120, border: "1px solid #BFDBFE", borderRadius: 10, padding: "8px 12px", fontSize: 13, color: "#0F172A", background: "#fff", outline: "none" };
-const stopBtnStyle: CSSProperties = { border: "none", borderRadius: 10, background: "#2563EB", color: "#fff", padding: "9px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" };
+const timerBannerStyle: CSSProperties = { background: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: 20, padding: "16px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" };
+const timerInputStyle: CSSProperties = { flex: 1, minWidth: 120, border: "1px solid #BFDBFE", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "#0F172A", background: "#fff", outline: "none" };
+const stopBtnStyle: CSSProperties = { border: "none", borderRadius: 12, background: "#2563EB", color: "#fff", padding: "10px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" };
 
 // Task rows
 function taskRowStyle(done: boolean): CSSProperties {
-  return { display: "flex", alignItems: "center", gap: 10, padding: "10px 4px", borderBottom: "1px solid #F1F5F9", opacity: done ? 0.75 : 1 };
+  return { display: "flex", alignItems: "center", gap: 12, padding: "13px 4px", borderBottom: "1px solid #F1F5F9", opacity: done ? 0.75 : 1 };
 }
 function checkBtnStyle(done: boolean): CSSProperties {
   return { border: "none", background: "transparent", padding: 0, cursor: "pointer", color: done ? "#16A34A" : "#CBD5E1", flexShrink: 0, display: "flex" };
 }
 const deleteBtnStyle: CSSProperties = { border: "none", background: "transparent", cursor: "pointer", color: "#CBD5E1", padding: 0, flexShrink: 0, display: "flex" };
-const addBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, border: "none", borderRadius: 10, background: "#2563EB", color: "#fff", padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" };
-const emptyTaskStyle: CSSProperties = { padding: "18px 0", fontSize: 13, color: "#94A3B8", textAlign: "center" };
+const addBtnStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 12, background: "#2563EB", color: "#fff", padding: "10px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" };
+const emptyTaskStyle: CSSProperties = { padding: "24px 0", fontSize: 14, color: "#94A3B8", textAlign: "center" };
 
 // Upcoming divider
 const upcomingDividerStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10, margin: "12px 0 10px" };
@@ -661,21 +661,21 @@ function pillStyle(bg: string, color: string): CSSProperties {
 }
 
 // Actions
-const primaryActionBtnStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "none", borderRadius: 16, background: "#0F172A", color: "#fff", padding: "15px 0", fontSize: 14, fontWeight: 800, cursor: "pointer" };
-const secondaryActionBtnStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, border: "1px solid #E8E8E4", background: "#fff", color: "#0F172A", padding: "15px 0", fontSize: 14, fontWeight: 800, textDecoration: "none" };
+const primaryActionBtnStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "none", borderRadius: 18, background: "#0F172A", color: "#fff", padding: "17px 0", fontSize: 15, fontWeight: 800, cursor: "pointer" };
+const secondaryActionBtnStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 18, border: "1px solid #E8E8E4", background: "#fff", color: "#0F172A", padding: "17px 0", fontSize: 15, fontWeight: 800, textDecoration: "none" };
 
 // Status row
-const statusRowStyle: CSSProperties = { display: "flex", gap: 8 };
+const statusRowStyle: CSSProperties = { display: "flex", gap: 10 };
 
 // Quick access
-const quickTileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 18, padding: "16px 8px", textDecoration: "none", border: "1px solid rgba(148,163,184,0.12)" };
+const quickTileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 20, padding: "18px 8px", textDecoration: "none", border: "1px solid rgba(148,163,184,0.12)" };
 
 // Summary
-const summaryBoxStyle: CSSProperties = { borderRadius: 16, padding: 14, background: "#FAFAFA", border: "1px solid #E8E8E4" };
+const summaryBoxStyle: CSSProperties = { borderRadius: 18, padding: 16, background: "#FAFAFA", border: "1px solid #E8E8E4" };
 
 // My先生
-const openSenseiBtnStyle: CSSProperties = { border: "none", borderRadius: 999, background: "#2563EB", color: "#fff", padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" };
-const senseiPromptStyle: CSSProperties = { textAlign: "left", borderRadius: 14, padding: "12px 13px", border: "1px solid #E8E8E4", background: "#FAFAFA", cursor: "pointer" };
+const openSenseiBtnStyle: CSSProperties = { border: "none", borderRadius: 999, background: "#2563EB", color: "#fff", padding: "9px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" };
+const senseiPromptStyle: CSSProperties = { textAlign: "left", borderRadius: 16, padding: "14px 16px", border: "1px solid #E8E8E4", background: "#FAFAFA", cursor: "pointer" };
 
 // Feed
 const feedItemStyle: CSSProperties = { padding: "12px 14px", borderRadius: 16, background: "#FAFAFA", border: "1px solid #E8E8E4" };

@@ -149,7 +149,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           const active = isActive(pathname, href);
           return (
             <Link key={href} href={href} className={`bottom-nav-item ${active ? "is-active" : ""}`}>
-              <Icon size={21} strokeWidth={active ? 2.4 : 1.9} />
+              <Icon size={23} strokeWidth={active ? 2.4 : 1.8} />
               <span>{label}</span>
             </Link>
           );
@@ -161,8 +161,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="bottom-nav-item"
           style={{ background: "none", border: "none", cursor: "pointer" }}
         >
-          <User size={21} strokeWidth={1.9} />
-          <span style={{ fontSize: 10 }}>自分</span>
+          <User size={23} strokeWidth={1.8} />
+          <span>自分</span>
         </button>
       </nav>
 
@@ -268,8 +268,8 @@ const closeSheetBtnStyle: CSSProperties = {
 const sheetGridStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(3, 1fr)",
-  gap: 12,
-  padding: "8px 16px 32px",
+  gap: 14,
+  padding: "10px 18px 40px",
   overflowY: "auto",
 };
 
@@ -277,24 +277,24 @@ const sheetItemStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 8,
-  padding: "16px 8px",
-  borderRadius: 16,
+  gap: 10,
+  padding: "20px 8px",
+  borderRadius: 20,
   background: "#FFFFFF",
   textDecoration: "none",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
 };
 
 const sheetIconStyle: CSSProperties = {
-  width: 52,
-  height: 52,
-  borderRadius: 16,
+  width: 56,
+  height: 56,
+  borderRadius: 18,
   display: "grid",
   placeItems: "center",
 };
 
 const sheetItemLabelStyle: CSSProperties = {
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 700,
   color: "#0F172A",
   textAlign: "center",
