@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppLayout from "@/app/components/AppLayout";
 import Link from "next/link";
-import { Check, ChevronDown, ChevronRight, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
+import { Check, ChevronDown, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
 
 type TodoItem = {
   id: string; title: string; category: "task" | "review";
@@ -175,29 +175,7 @@ export default function TodoPage() {
             </div>
           )}
 
-          {/* タスク入力 */}
-          {showInput ? (
-            <div style={inputCardStyle}>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") addTodo(); if (e.key === "Escape") { setShowInput(false); setInput(""); } }}
-                placeholder="タスクを入力..."
-                style={inputStyle}
-                autoFocus
-              />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setShowInput(false); setInput(""); }} style={cancelBtnStyle}><X size={16} /></button>
-                <button onClick={addTodo} disabled={!input.trim()} style={submitBtnStyle}>追加</button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={openInput} style={addBarStyle}>
-              <div style={addIconStyle}><Plus size={18} color="#3157B7" /></div>
-              <span style={{ fontSize: 15, color: "#94A3B8" }}>タスクを追加...</span>
-            </button>
-          )}
+          {/* スペーサー（入力欄の分） */}
 
           {/* タスクリスト */}
           <div style={sectionStyle}>
@@ -281,6 +259,41 @@ export default function TodoPage() {
 
         </div>
       </div>
+
+      {/* FAB */}
+      <button onClick={openInput} style={fabStyle}>
+        <Plus size={26} color="#fff" strokeWidth={2.5} />
+      </button>
+
+      {/* ボトムシート */}
+      {showInput && (
+        <>
+          <div onClick={() => { setShowInput(false); setInput(""); }} style={sheetOverlayStyle} />
+          <div style={sheetStyle}>
+            <div style={sheetHandleStyle} />
+            <div style={sheetBodyStyle}>
+              <div style={sheetTitleStyle}>タスクを追加</div>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") addTodo(); if (e.key === "Escape") { setShowInput(false); setInput(""); } }}
+                placeholder="例: 数学の問題集 p.30〜40"
+                style={sheetInputStyle}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => { setShowInput(false); setInput(""); }} style={sheetCancelStyle}>
+                  キャンセル
+                </button>
+                <button onClick={addTodo} disabled={!input.trim()} style={sheetSubmitStyle}>
+                  追加する
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </AppLayout>
   );
 }
@@ -362,23 +375,54 @@ const progressBarWrapStyle: CSSProperties = { flex: 1 };
 const progressBgStyle: CSSProperties = { height: 4, borderRadius: 999, background: "#EEF2FF", overflow: "hidden" };
 const progressFillStyle: CSSProperties = { height: "100%", borderRadius: 999, background: "#3157B7", transition: "width 0.5s ease" };
 
-const addBarStyle: CSSProperties = {
-  display: "flex", alignItems: "center", gap: 12,
-  padding: "14px 16px", borderRadius: 16,
-  background: "#fff", border: "1.5px dashed #CBD5E1",
-  cursor: "pointer", width: "100%", textAlign: "left",
-  boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+const fabStyle: CSSProperties = {
+  position: "fixed", bottom: 96, right: 22,
+  width: 58, height: 58, borderRadius: 999,
+  background: "#3157B7",
+  border: "none", cursor: "pointer",
+  display: "grid", placeItems: "center",
+  boxShadow: "0 6px 24px rgba(49,87,183,0.38)",
+  zIndex: 150,
 };
-const addIconStyle: CSSProperties = { width: 32, height: 32, borderRadius: 10, background: "#EFF6FF", display: "grid", placeItems: "center", flexShrink: 0 };
 
-const inputCardStyle: CSSProperties = {
-  background: "#fff", borderRadius: 16, padding: "14px 16px",
-  display: "grid", gap: 10, boxShadow: "0 4px 20px rgba(49,87,183,0.12)",
-  border: "1.5px solid #BFDBFE",
+const sheetOverlayStyle: CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200,
 };
-const inputStyle: CSSProperties = { border: "none", outline: "none", fontSize: 16, color: "#0F172A", fontFamily: "inherit", background: "transparent" };
-const cancelBtnStyle: CSSProperties = { width: 36, height: 36, borderRadius: 10, border: "1px solid #E2E8F0", background: "#fff", cursor: "pointer", display: "grid", placeItems: "center", color: "#94A3B8" };
-const submitBtnStyle: CSSProperties = { flex: 1, height: 36, borderRadius: 10, border: "none", background: "#3157B7", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+const sheetStyle: CSSProperties = {
+  position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 201,
+  background: "#fff", borderRadius: "24px 24px 0 0",
+  padding: "0 0 env(safe-area-inset-bottom)",
+  boxShadow: "0 -8px 40px rgba(15,23,42,0.12)",
+  animation: "slideUp 0.22s ease",
+};
+const sheetHandleStyle: CSSProperties = {
+  width: 36, height: 4, borderRadius: 999, background: "#E2E8F0",
+  margin: "12px auto 0",
+};
+const sheetBodyStyle: CSSProperties = {
+  padding: "20px 20px 32px", display: "grid", gap: 16,
+};
+const sheetTitleStyle: CSSProperties = {
+  fontSize: 17, fontWeight: 900, color: "#0F172A",
+};
+const sheetInputStyle: CSSProperties = {
+  padding: "14px 16px", borderRadius: 14,
+  border: "1.5px solid #BFDBFE", outline: "none",
+  fontSize: 16, color: "#0F172A", fontFamily: "inherit",
+  background: "#F8FAFF",
+};
+const sheetCancelStyle: CSSProperties = {
+  flex: 1, padding: "14px", borderRadius: 14,
+  border: "1px solid #E2E8F0", background: "#F8FAFC",
+  fontSize: 15, fontWeight: 700, color: "#64748B",
+  cursor: "pointer", fontFamily: "inherit",
+};
+const sheetSubmitStyle: CSSProperties = {
+  flex: 2, padding: "14px", borderRadius: 14,
+  border: "none", background: "#3157B7",
+  fontSize: 15, fontWeight: 800, color: "#fff",
+  cursor: "pointer", fontFamily: "inherit",
+};
 
 const sectionStyle: CSSProperties = { display: "grid", gap: 12 };
 const sectionLabelRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 8, paddingLeft: 2 };
