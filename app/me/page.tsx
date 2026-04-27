@@ -7,6 +7,7 @@ import AppLayout from "@/app/components/AppLayout";
 import {
   BadgeCheck,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   Flame,
   MessageSquareText,
@@ -16,10 +17,6 @@ import {
 } from "lucide-react";
 
 type LevelTheme = {
-  level: number;
-  title: string;
-  subtitle: string;
-  reward: string;
   accent: string;
   bg: string;
 };
@@ -28,7 +25,6 @@ type XpData = {
   xp: number;
   name: string;
   level: number;
-  current: number;
   next: number;
   pct: number;
   streak: number;
@@ -110,8 +106,8 @@ export default function MePage() {
     );
   }
 
-  const unlockedBadges = badges.filter((badge) => badge.unlocked);
   const latestExam = exams[0] ?? null;
+  const unlockedBadges = badges.filter((badge) => badge.unlocked);
   const remainingXp = Math.max(0, profile.next - profile.xp);
   const accent = profile.levelTheme?.accent ?? "#3157B7";
   const softBg = profile.levelTheme?.bg ?? "#EEF2FF";
@@ -121,36 +117,30 @@ export default function MePage() {
       <div style={pageStyle}>
         <main style={mainStyle}>
           <section style={heroCardStyle}>
-            <div style={heroHeaderStyle}>
+            <div style={heroTopStyle}>
               <div style={avatarStyle}>{(profile.name || "?").slice(0, 1).toUpperCase()}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={eyebrowStyle}>マイページ</div>
-                <h1 style={heroTitleStyle}>{profile.name || "ユーザー"}</h1>
-                <div style={pillRowStyle}>
-                  <span style={primaryPillStyle(softBg, accent)}>{profile.planLabel}</span>
-                  <span style={secondaryPillStyle}>Lv.{profile.level}</span>
-                  {profile.targetUniv ? <span style={secondaryPillStyle}>{profile.targetUniv}</span> : null}
-                </div>
-              </div>
               <button onClick={() => router.push("/settings")} style={settingsButtonStyle}>
                 <Settings size={15} />
                 設定
               </button>
             </div>
 
-            <div style={levelCardStyle(softBg)}>
-              <div>
-                <div style={levelLabelStyle}>次のレベルまで</div>
-                <div style={levelValueStyle}>{remainingXp} XP</div>
+            <div>
+              <div style={eyebrowStyle}>マイページ</div>
+              <h1 style={titleStyle}>{profile.name || "ユーザー"}</h1>
+              <div style={pillRowStyle}>
+                <span style={primaryPillStyle(softBg, accent)}>{profile.planLabel}</span>
+                <span style={secondaryPillStyle}>Lv.{profile.level}</span>
               </div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={progressMetaStyle}>
-                  <span>現在 {profile.xp} XP</span>
-                  <span>{Math.round(profile.pct)}%</span>
-                </div>
-                <div style={progressTrackStyle}>
-                  <div style={{ ...progressFillStyle, width: `${profile.pct}%`, background: accent }} />
-                </div>
+            </div>
+
+            <div style={xpBoxStyle(softBg)}>
+              <div style={xpTopStyle}>
+                <span style={xpLabelStyle}>次のレベルまで</span>
+                <span style={xpValueStyle}>{remainingXp} XP</span>
+              </div>
+              <div style={progressTrackStyle}>
+                <div style={{ ...progressFillStyle, width: `${profile.pct}%`, background: accent }} />
               </div>
             </div>
           </section>
@@ -162,72 +152,69 @@ export default function MePage() {
             <SimpleStatCard icon={<Flame size={15} />} label="連続日数" value={`${profile.streak}日`} />
           </section>
 
-          <section style={contentGridStyle}>
-            <div style={sectionCardStyle}>
-              <SectionHead title="プロフィール" desc="今の目標と学習の積み上がりです。" />
-              <div style={infoListStyle}>
-                <InfoRow label="志望校" value={profile.targetUniv || "未設定"} />
-                <InfoRow label="受験日" value={profile.examDate ? formatDate(profile.examDate) : "未設定"} />
-                <InfoRow label="活動日数" value={`${profile.activeStudyDays}日`} />
-                <InfoRow label="完了タスク" value={`${profile.completedTasks}件`} />
-                <InfoRow label="バッジ" value={`${profile.badgeCount}個`} />
-              </div>
-            </div>
-
-            <div style={sectionCardStyle}>
-              <SectionHead title="よく使う項目" desc="よく見るページへすぐ移動できます。" />
-              <div style={quickGridStyle}>
-                {QUICK_LINKS.map(({ href, label, Icon, color, bg }) => (
-                  <Link key={href} href={href} style={quickLinkStyle}>
-                    <div style={{ ...quickIconStyle, color, background: bg }}>
-                      <Icon size={18} />
-                    </div>
-                    <span style={quickLabelStyle}>{label}</span>
-                  </Link>
-                ))}
-              </div>
+          <section style={cardStyle}>
+            <SectionHead title="プロフィール" />
+            <div style={infoListStyle}>
+              <InfoRow label="志望校" value={profile.targetUniv || "未設定"} />
+              <InfoRow label="受験日" value={profile.examDate ? formatDate(profile.examDate) : "未設定"} />
+              <InfoRow label="活動日数" value={`${profile.activeStudyDays}日`} />
+              <InfoRow label="完了タスク" value={`${profile.completedTasks}件`} />
+              <InfoRow label="バッジ" value={`${profile.badgeCount}個`} />
             </div>
           </section>
 
-          <section style={contentGridStyle}>
-            <div style={sectionCardStyle}>
-              <SectionHead title="最近の成績" desc="直近の模試だけをシンプルに確認できます。" />
-              {latestExam ? (
-                <div style={examCardStyle}>
-                  <div>
-                    <div style={examTitleStyle}>{latestExam.exam_name}</div>
-                    <div style={examSubStyle}>{formatDate(latestExam.exam_date)}</div>
+          <section style={cardStyle}>
+            <SectionHead title="よく使う項目" />
+            <div style={shortcutListStyle}>
+              {QUICK_LINKS.map(({ href, label, Icon, color, bg }) => (
+                <Link key={href} href={href} style={shortcutRowStyle}>
+                  <div style={{ ...shortcutIconStyle, color, background: bg }}>
+                    <Icon size={18} />
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={examScoreStyle}>{formatScore(latestExam)}</div>
-                    <div style={examSubStyle}>
-                      {latestExam.total_deviation ? `偏差値 ${latestExam.total_deviation}` : "偏差値なし"}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div style={emptyStyle}>まだ模試の記録がありません。</div>
-              )}
+                  <span style={shortcutLabelStyle}>{label}</span>
+                  <ChevronRight size={16} color="#94A3B8" />
+                </Link>
+              ))}
             </div>
+          </section>
 
-            <div style={sectionCardStyle}>
-              <SectionHead title="最近のバッジ" desc="解放したバッジをいくつか表示しています。" />
-              {unlockedBadges.length > 0 ? (
-                <div style={badgeListStyle}>
-                  {unlockedBadges.slice(0, 4).map((badge) => (
-                    <div key={badge.id} style={badgeRowStyle}>
-                      <div style={badgeEmojiStyle}>{badge.emoji}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={badgeTitleStyle}>{badge.label}</div>
-                        <div style={badgeDescStyle}>{badge.description}</div>
-                      </div>
-                    </div>
-                  ))}
+          <section style={cardStyle}>
+            <SectionHead title="最近の成績" />
+            {latestExam ? (
+              <div style={examCardStyle}>
+                <div>
+                  <div style={examTitleStyle}>{latestExam.exam_name}</div>
+                  <div style={examSubStyle}>{formatDate(latestExam.exam_date)}</div>
                 </div>
-              ) : (
-                <div style={emptyStyle}>まだ解放したバッジはありません。</div>
-              )}
-            </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={examScoreStyle}>{formatScore(latestExam)}</div>
+                  <div style={examSubStyle}>
+                    {latestExam.total_deviation ? `偏差値 ${latestExam.total_deviation}` : "偏差値なし"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={emptyStyle}>まだ模試の記録がありません。</div>
+            )}
+          </section>
+
+          <section style={cardStyle}>
+            <SectionHead title="最近のバッジ" />
+            {unlockedBadges.length > 0 ? (
+              <div style={badgeListStyle}>
+                {unlockedBadges.slice(0, 3).map((badge) => (
+                  <div key={badge.id} style={badgeRowStyle}>
+                    <div style={badgeEmojiStyle}>{badge.emoji}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={badgeTitleStyle}>{badge.label}</div>
+                      <div style={badgeDescStyle}>{badge.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={emptyStyle}>まだ解放したバッジはありません。</div>
+            )}
           </section>
         </main>
       </div>
@@ -235,13 +222,8 @@ export default function MePage() {
   );
 }
 
-function SectionHead({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div style={{ display: "grid", gap: 4, marginBottom: 14 }}>
-      <h2 style={sectionTitleStyle}>{title}</h2>
-      <p style={sectionDescStyle}>{desc}</p>
-    </div>
-  );
+function SectionHead({ title }: { title: string }) {
+  return <h2 style={sectionTitleStyle}>{title}</h2>;
 }
 
 function SimpleStatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -309,50 +291,65 @@ const pageStyle: CSSProperties = {
 };
 
 const mainStyle: CSSProperties = {
-  maxWidth: 960,
+  maxWidth: 560,
   margin: "0 auto",
-  padding: "20px 16px 88px",
+  padding: "14px 12px 88px",
   display: "grid",
-  gap: 16,
+  gap: 12,
 };
 
 const heroCardStyle: CSSProperties = {
-  borderRadius: 28,
+  borderRadius: 22,
   background: "#FFFFFF",
   border: "1px solid rgba(148,163,184,0.14)",
-  padding: 20,
+  padding: 14,
   display: "grid",
-  gap: 16,
-};
-
-const heroHeaderStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "flex-start",
   gap: 14,
 };
 
+const heroTopStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+};
+
 const avatarStyle: CSSProperties = {
-  width: 64,
-  height: 64,
+  width: 52,
+  height: 52,
   borderRadius: "50%",
   background: "linear-gradient(135deg, #0F172A 0%, #3157B7 100%)",
   display: "grid",
   placeItems: "center",
   color: "#FFFFFF",
-  fontSize: 22,
+  fontSize: 18,
   fontWeight: 900,
   flexShrink: 0,
 };
 
-const eyebrowStyle: CSSProperties = {
+const settingsButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "7px 10px",
+  borderRadius: 999,
+  border: "1px solid #E2E8F0",
+  background: "#F8FAFC",
+  color: "#475569",
   fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const eyebrowStyle: CSSProperties = {
+  fontSize: 11,
   fontWeight: 800,
   color: "#64748B",
 };
 
-const heroTitleStyle: CSSProperties = {
+const titleStyle: CSSProperties = {
   margin: "4px 0 0",
-  fontSize: 26,
+  fontSize: 22,
   lineHeight: 1.1,
   fontWeight: 900,
   color: "#0F172A",
@@ -361,15 +358,15 @@ const heroTitleStyle: CSSProperties = {
 const pillRowStyle: CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
-  gap: 8,
-  marginTop: 12,
+  gap: 6,
+  marginTop: 10,
 };
 
 const primaryPillStyle = (bg: string, color: string): CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
-  minHeight: 32,
-  padding: "0 12px",
+  minHeight: 28,
+  padding: "0 10px",
   borderRadius: 999,
   background: bg,
   color,
@@ -380,8 +377,8 @@ const primaryPillStyle = (bg: string, color: string): CSSProperties => ({
 const secondaryPillStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  minHeight: 32,
-  padding: "0 12px",
+  minHeight: 28,
+  padding: "0 10px",
   borderRadius: 999,
   background: "#F1F5F9",
   color: "#334155",
@@ -389,51 +386,31 @@ const secondaryPillStyle: CSSProperties = {
   fontWeight: 800,
 };
 
-const settingsButtonStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "8px 12px",
-  borderRadius: 999,
-  border: "1px solid #E2E8F0",
-  background: "#F8FAFC",
-  color: "#475569",
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: "pointer",
-  flexShrink: 0,
-};
-
-const levelCardStyle = (bg: string): CSSProperties => ({
-  borderRadius: 22,
+const xpBoxStyle = (bg: string): CSSProperties => ({
+  borderRadius: 18,
   background: bg,
-  padding: 16,
-  display: "flex",
-  alignItems: "center",
-  gap: 16,
+  padding: 14,
+  display: "grid",
+  gap: 8,
 });
 
-const levelLabelStyle: CSSProperties = {
+const xpTopStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 8,
+};
+
+const xpLabelStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 800,
   color: "#64748B",
 };
 
-const levelValueStyle: CSSProperties = {
-  marginTop: 6,
-  fontSize: 24,
+const xpValueStyle: CSSProperties = {
+  fontSize: 18,
   fontWeight: 900,
   color: "#0F172A",
-};
-
-const progressMetaStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 8,
-  marginBottom: 8,
-  fontSize: 12,
-  fontWeight: 700,
-  color: "#64748B",
 };
 
 const progressTrackStyle: CSSProperties = {
@@ -450,17 +427,17 @@ const progressFillStyle: CSSProperties = {
 
 const statsGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: 12,
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 10,
 };
 
 const statCardStyle: CSSProperties = {
-  borderRadius: 22,
+  borderRadius: 18,
   background: "#FFFFFF",
   border: "1px solid rgba(148,163,184,0.14)",
-  padding: 16,
+  padding: 14,
   display: "grid",
-  gap: 8,
+  gap: 6,
 };
 
 const statLabelStyle: CSSProperties = {
@@ -473,41 +450,28 @@ const statLabelStyle: CSSProperties = {
 };
 
 const statValueStyle: CSSProperties = {
-  fontSize: 22,
+  fontSize: 18,
   fontWeight: 900,
   color: "#0F172A",
 };
 
-const contentGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 16,
-};
-
-const sectionCardStyle: CSSProperties = {
-  borderRadius: 24,
+const cardStyle: CSSProperties = {
+  borderRadius: 20,
   background: "#FFFFFF",
   border: "1px solid rgba(148,163,184,0.14)",
-  padding: 18,
+  padding: 14,
 };
 
 const sectionTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 17,
+  margin: "0 0 12px",
+  fontSize: 15,
   fontWeight: 900,
   color: "#0F172A",
-};
-
-const sectionDescStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  lineHeight: 1.7,
-  color: "#64748B",
 };
 
 const infoListStyle: CSSProperties = {
   display: "grid",
-  gap: 10,
+  gap: 8,
 };
 
 const infoRowStyle: CSSProperties = {
@@ -515,9 +479,9 @@ const infoRowStyle: CSSProperties = {
   justifyContent: "space-between",
   alignItems: "center",
   gap: 12,
-  borderRadius: 16,
+  borderRadius: 14,
   background: "#F8FAFC",
-  padding: "12px 14px",
+  padding: "10px 12px",
 };
 
 const infoLabelStyle: CSSProperties = {
@@ -533,50 +497,50 @@ const infoValueStyle: CSSProperties = {
   textAlign: "right",
 };
 
-const quickGridStyle: CSSProperties = {
+const shortcutListStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 10,
+  gap: 8,
 };
 
-const quickLinkStyle: CSSProperties = {
+const shortcutRowStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-  borderRadius: 18,
+  borderRadius: 14,
   background: "#F8FAFC",
   border: "1px solid rgba(148,163,184,0.12)",
-  padding: "14px 12px",
+  padding: "11px 12px",
   textDecoration: "none",
 };
 
-const quickIconStyle: CSSProperties = {
-  width: 40,
-  height: 40,
-  borderRadius: 14,
+const shortcutIconStyle: CSSProperties = {
+  width: 36,
+  height: 36,
+  borderRadius: 12,
   display: "grid",
   placeItems: "center",
   flexShrink: 0,
 };
 
-const quickLabelStyle: CSSProperties = {
+const shortcutLabelStyle: CSSProperties = {
+  flex: 1,
   fontSize: 13,
   fontWeight: 800,
   color: "#0F172A",
 };
 
 const examCardStyle: CSSProperties = {
-  borderRadius: 18,
+  borderRadius: 16,
   background: "#F8FAFC",
   border: "1px solid rgba(148,163,184,0.12)",
-  padding: 16,
+  padding: 14,
   display: "flex",
   justifyContent: "space-between",
   gap: 12,
 };
 
 const examTitleStyle: CSSProperties = {
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: 900,
   color: "#0F172A",
 };
@@ -588,34 +552,34 @@ const examSubStyle: CSSProperties = {
 };
 
 const examScoreStyle: CSSProperties = {
-  fontSize: 18,
+  fontSize: 16,
   fontWeight: 900,
   color: "#0F172A",
 };
 
 const badgeListStyle: CSSProperties = {
   display: "grid",
-  gap: 10,
+  gap: 8,
 };
 
 const badgeRowStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-  borderRadius: 18,
+  borderRadius: 14,
   background: "#FFF7ED",
   border: "1px solid rgba(148,163,184,0.12)",
-  padding: "12px 14px",
+  padding: "10px 12px",
 };
 
 const badgeEmojiStyle: CSSProperties = {
-  width: 40,
-  height: 40,
-  borderRadius: 14,
+  width: 36,
+  height: 36,
+  borderRadius: 12,
   background: "#FFFFFF",
   display: "grid",
   placeItems: "center",
-  fontSize: 18,
+  fontSize: 17,
   flexShrink: 0,
 };
 
@@ -626,19 +590,19 @@ const badgeTitleStyle: CSSProperties = {
 };
 
 const badgeDescStyle: CSSProperties = {
-  marginTop: 4,
-  fontSize: 12,
-  lineHeight: 1.6,
+  marginTop: 3,
+  fontSize: 11,
+  lineHeight: 1.5,
   color: "#64748B",
 };
 
 const emptyStyle: CSSProperties = {
-  borderRadius: 18,
+  borderRadius: 14,
   background: "#F8FAFC",
   border: "1px solid rgba(148,163,184,0.12)",
-  padding: 18,
+  padding: 16,
   fontSize: 13,
-  lineHeight: 1.8,
+  lineHeight: 1.7,
   color: "#64748B",
   textAlign: "center",
 };
