@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppLayout from "@/app/components/AppLayout";
 import Link from "next/link";
-import { Check, ChevronDown, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, GraduationCap, Plus, Sparkles, BookOpen, X } from "lucide-react";
 
 type TodoItem = {
   id: string; title: string; category: "task" | "review";
@@ -312,8 +312,10 @@ function TaskRow({ item, index, onToggle, onDelete, accent = "#3157B7" }: {
       onMouseLeave={() => setHover(false)}
     >
       <div style={{ width: 3, borderRadius: 999, background: done ? "#E2E8F0" : accent, alignSelf: "stretch", flexShrink: 0 }} />
-      <button onClick={() => onToggle(item.id)} style={checkBtnStyle(done, accent)}>
-        {done && <Check size={13} color="#fff" strokeWidth={3} />}
+      <button onClick={() => onToggle(item.id)} style={checkBtnBaseStyle}>
+        {done
+          ? <CheckCircle2 size={26} color={accent} strokeWidth={2} />
+          : <Circle size={26} color="#CBD5E1" strokeWidth={1.8} />}
       </button>
       <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: done ? "#94A3B8" : "#0F172A", textDecoration: done ? "line-through" : "none", lineHeight: 1.5 }}>
         {item.title}
@@ -453,15 +455,11 @@ function taskRowStyle(done: boolean, hover: boolean): CSSProperties {
     opacity: done ? 0.65 : 1,
   };
 }
-function checkBtnStyle(done: boolean, accent: string): CSSProperties {
-  return {
-    width: 24, height: 24, borderRadius: 999, flexShrink: 0,
-    border: done ? "none" : `2px solid #CBD5E1`,
-    background: done ? accent : "transparent",
-    display: "grid", placeItems: "center", cursor: "pointer",
-    transition: "all 0.15s",
-  };
-}
+const checkBtnBaseStyle: CSSProperties = {
+  border: "none", background: "transparent", padding: 0,
+  cursor: "pointer", display: "flex", flexShrink: 0,
+  transition: "transform 0.1s",
+};
 function deleteBtnStyle(hover: boolean): CSSProperties {
   return {
     border: "none", background: "transparent", cursor: "pointer",
