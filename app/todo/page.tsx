@@ -53,10 +53,7 @@ export default function TodoPage() {
       touchStartY.current = e.touches[0].clientY;
     };
     const onMove = (e: TouchEvent) => {
-      if (touchStartX.current === null || touchStartY.current === null) return;
-      const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-      if (dx > dy) e.preventDefault(); // 横スワイプのみ縦スクロールを止める
+      e.preventDefault(); // カレンダー上では縦スクロールを常に無効化
     };
     const onEnd = (e: TouchEvent) => {
       if (touchStartX.current === null) return;
@@ -65,7 +62,7 @@ export default function TodoPage() {
       touchStartX.current = null;
       touchStartY.current = null;
     };
-    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchstart", onStart, { passive: false });
     el.addEventListener("touchmove", onMove, { passive: false });
     el.addEventListener("touchend", onEnd, { passive: true });
     return () => {
